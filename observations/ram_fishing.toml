@@ -1,0 +1,166 @@
+# Fishing mortality per fishNET species from RAM Legacy v4.65 stock assessments.
+# Written by `python obsval.py --tables` on 2026-09-26.
+# F_ram: 1993-2021 mean of -ln(1 - catch/biomass) per stock (or the assessed F where there is no
+#        exploitation rate), averaged over the species' stocks weighted by their biomass. 1/yr.
+# F_model = 0.5 x F_ram.  NOTE: RAM fishing is DELIBERATELY SCALED DOWN by 0.5 for now,
+#        so the model is fished at half the assessed rate. F_model is what the namelists use (fishing_F).
+
+[anchoveta]
+F_ram = 0.9949
+F_model = 0.4975
+stocks = 4
+of = 4
+min = 0.252
+max = 1.118
+
+[sardine_eu]
+F_ram = 0.3175
+F_model = 0.1588
+stocks = 10
+of = 13
+min = 0.093
+max = 1.368
+
+[sardine_pacific]
+F_ram = 0.1384
+F_model = 0.0692
+stocks = 4
+of = 5
+min = 0.061
+max = 0.346
+
+[herring]
+F_ram = 0.1406
+F_model = 0.0703
+stocks = 16
+of = 19
+min = 0.069
+max = 0.488
+
+[capelin]
+F_ram = 0.4223
+F_model = 0.2111
+stocks = 2
+of = 4
+min = 0.134
+max = 1.651
+
+[cod_atlantic]
+F_ram = 0.7388
+F_model = 0.3694
+stocks = 24
+of = 27
+min = 0.014
+max = 1.396
+
+[pollock]
+F_ram = 0.181
+F_model = 0.0905
+stocks = 9
+of = 14
+min = 0.001
+max = 1.011
+
+[hake]
+F_ram = 0.6899
+F_model = 0.345
+stocks = 24
+of = 27
+min = 0.043
+max = 2.996
+
+[skipjack]
+F_ram = 0.4592
+F_model = 0.2296
+stocks = 4
+of = 5
+min = 0.225
+max = 1.321
+
+[yellowfin]
+F_ram = 0.5868
+F_model = 0.2934
+stocks = 3
+of = 4
+min = 0.222
+max = 0.806
+
+[albacore]
+F_ram = 0.1125
+F_model = 0.0562
+stocks = 5
+of = 6
+min = 0.065
+max = 0.25
+
+[bluefin_atlantic]
+F_ram = 0.259
+F_model = 0.1295
+stocks = 2
+of = 2
+min = 0.169
+max = 0.263
+
+[bluefin_pacific]
+F_ram = 0.4257
+F_model = 0.2128
+stocks = 1
+of = 1
+min = 0.426
+max = 0.426
+
+[swordfish]
+F_ram = 0.2914
+F_model = 0.1457
+stocks = 6
+of = 7
+min = 0.097
+max = 0.927
+
+[halibut]
+F_ram = 0.1799
+F_model = 0.09
+stocks = 3
+of = 4
+min = 0.064
+max = 0.186
+
+[greenland_halibut]
+F_ram = 0.0787
+F_model = 0.0394
+stocks = 4
+of = 6
+min = 0.027
+max = 0.411
+
+[flounder]
+F_ram = 0.0541
+F_model = 0.027
+stocks = 47
+of = 70
+min = 0.002
+max = 0.914
+
+[skate]
+F_ram = 0.0465
+F_model = 0.0233
+stocks = 7
+of = 56
+min = 0.028
+max = 0.25
+
+[toothfish]
+F_ram = 0.0157
+F_model = 0.0078
+stocks = 1
+of = 1
+min = 0.016
+max = 0.016
+
+[anchovy]
+F_ram = 0.2035
+F_model = 0.1018
+stocks = 18
+of = 21
+min = 0.002
+max = 2.285

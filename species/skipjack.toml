@@ -1,0 +1,53 @@
+# Skipjack tuna (Katsuwonus pelamis) - bulk of global tuna biomass
+name = "skipjack"
+group = "large_pelagic"   # dashboard grouping only; the model ignores it
+color = "#d62728"
+length_weight = [0.02, 2.95]
+L_inf = 90.0
+L_juv = 3.0
+lifespan_days = 2200
+egg_days = 1.8
+T_ref = 27.0
+cmax = 0.6
+alpha = 0.8
+K_food = 0.01
+f_crit = 0.2
+c_swim = 0.85
+reserve_max = 0.3
+kappa_R = 0.6
+gonad_frac = 0.1
+spawn_doy = [1, 365]  # day-of-year window (wraps through New Year if start > end)
+m0 = 0.005
+m_early = 0.2
+K_nursery = 0.2   # g m-2 (2026-09-26, after two 240-day checks): plankton-fed juveniles boomed at 0.5-5
+K_adult = 2   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.03
+fishing_L50_L95 = [40.0, 55.0]
+lat_sectors = ["tropical"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_range = [0, 250]  # m (clipped to the model's deepest level)
+A_o = 0.3  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 3.5
+m_hypoxia = 0.5
+larva_depth_max = 50
+prey_size_ratio = 0.15
+prey_size_sd = 1.0
+diet = { zoo = 0.15 }
+plankton_L_max = 25.0   # cm: bigger fish no longer eat plankton (2026-09-26); they need fish prey
+larva_diet = { zoo = 1.0 }
+fish_diet = { anchoveta = 0.6, lanternfish = 1.0, bristlemouth = 0.5, skipjack = 0.2, sardinella = 0.6 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [27.0, 1.5, 0.4]
+T_width = [3.5, 0.35, 0.3]
+speed = [1.6, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [42.0, 3.5, 0.4]
+egg_mass = [0.0006, 0.0001, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [0.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [0.0, 0.5, 0.3]
+w_home = [3.0, 0.5, 0.3]
+w_shelf = [-0.8, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

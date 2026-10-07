@@ -1,0 +1,53 @@
+# Swordfish (Xiphias gladius) - crosses the epi/mesopelagic boundary nightly
+name = "swordfish"
+group = "large_pelagic"   # dashboard grouping only; the model ignores it
+color = "#5b4b8a"
+length_weight = [0.004, 3.1]
+L_inf = 300.0
+L_juv = 3.0
+lifespan_days = 3300
+egg_days = 1.8
+T_ref = 20.0
+cmax = 0.5
+alpha = 0.8
+K_food = 0.01
+f_crit = 0.2
+c_swim = 0.85
+reserve_max = 0.3
+kappa_R = 0.6
+gonad_frac = 0.1
+spawn_doy = [90, 250]  # day-of-year window (wraps through New Year if start > end)
+m0 = 0.004
+m_early = 0.2
+K_nursery = 0.1   # g m-2 (2026-09-26, after two 240-day checks): juvenile swordfish exploded x100 at 0.3-5
+K_adult = 0.3   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.03
+fishing_L50_L95 = [120.0, 170.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_range = [0, 600]  # m (clipped to the model's deepest level)
+A_o = 0.4  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.5
+m_hypoxia = 0.25
+larva_depth_max = 50
+prey_size_ratio = 0.15
+prey_size_sd = 1.0
+diet = { zoo = 0.15 }
+plankton_L_max = 5.0   # cm: swordfish eat fish from ~1 cm (2026-09-26, after two 240-day checks)
+larva_diet = { zoo = 1.0 }
+fish_diet = { squid = 0.9, lanternfish = 0.6, bristlemouth = 0.4, skipjack = 0.3, hake = 0.4, sardinella = 0.2 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [20.0, 2.0, 0.4]
+T_width = [7.0, 0.7, 0.3]
+speed = [1.2, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [170.0, 14.0, 0.4]
+egg_mass = [0.0007, 0.00012, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [0.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-3.0, 0.5, 0.3]
+w_home = [3.0, 0.5, 0.3]
+w_shelf = [-0.8, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

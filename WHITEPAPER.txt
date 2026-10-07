@@ -1,0 +1,113 @@
+fishNET - a hybrid eco-evolutionary model of marine fish populations
+====================================================================
+
+WHAT IT IS
+
+fishNET is a spatially explicit model of marine fish populations that couples individual
+fish, their genetics, and the ocean they live in within a single mass-conserving
+framework. Its defining choice is a hybrid representation. In regions where individual
+detail matters, fish are carried as tagged super-individuals - discrete agents with a
+position, depth, age, sex, parentage, body composition and a diploid genome - that swim,
+feed, starve, mature, spawn and die one at a time. Everywhere else the same populations
+are carried as stage-structured biomass fields that track not just how much fish is in a
+cell but the first four statistical moments of every heritable trait in it. Both
+representations obey the same equations, and fish convert between them as they cross the
+boundary: agents leaving a detailed region are aggregated into biomass, and biomass
+entering one is resampled back into individuals with its trait mean and variance
+reproduced exactly. This buys the behavioural and genetic realism of an individual-based
+model at something closer to the cost of a biomass model, which is what makes a global
+run with two dozen species tractable at all.
+
+HOW A FISH WORKS
+
+Every fish, whether an agent or a biomass class, runs the same bioenergetics. Maximum
+intake scales with body mass, respiration scales with mass and activity, and the surplus
+fills a reserve before going to structural growth or to gonads. Feeding is a multi-prey
+Holling type II response over plankton and over other fish, weighted by a diet matrix
+and by a log-normal prey-to-predator size window, with fish prey gape-limited. Fish die
+from size-dependent natural mortality, larval and density-dependent juvenile mortality,
+thermal stress, oxygen stress, predation, starvation when their reserve runs out,
+senescence, and fishing under a logistic size selectivity. Because every loss is
+attributed to a cause, the model reports not only who died but what killed them, and the
+breeding values of the dead - which is what allows selection to be measured rather than
+assumed.
+
+MOVEMENT, BEHAVIOUR AND EVOLUTION
+
+Fish do not follow prescribed migration routes. Each decision, a fish weighs hunger,
+local predation risk, thermal discomfort, isolation, light and pre-spawning ripeness,
+and chooses a behaviour - forage, flee, seek better temperature, school, hide, or head
+for a spawning site. The weights it places on those drives are themselves heritable
+traits, so foraging boldness, thermal preference, schooling tendency and site fidelity
+all evolve rather than being fixed by the modeller. Genetics are multilocus: unlinked
+diploid loci, free recombination, per-locus mutation, and genetic correlations that
+emerge from shared loci rather than being imposed. Mating is local by default, so gene
+flow is limited by dispersal and regional races can form, and a heritable shift in
+spawning date lets populations diverge in when they breed as well as where. Spawning
+location is emergent - ripe adults home toward their own birthplace and toward
+conspecific aggregations, eggs are released where the parents are, and currents carry
+them from there.
+
+THE OCEAN
+
+The physical setting is prescribed rather than simulated. fishNET can run on an
+idealised analytic basin, on an eddying shallow-water ocean, or on real ocean reanalysis
+read from netCDF - temperature and currents on a depth-resolved grid, with bathymetry
+and partial bottom cells so that shelves, slopes and the sea floor are real features
+that demersal species are pinned to. Biogeochemistry is an internal NPZD model extended
+with oxygen, which gives each species a Deutsch-style metabolic index: the ratio of
+oxygen supply to demand, which scales aerobic scope and imposes suffocation mortality
+where it falls too low. Oxygen minimum zones therefore shape distributions directly.
+Nitrogen is conserved to round-off through the whole coupled system, which is the
+model's main internal check that nothing is being created or lost by the machinery
+itself.
+
+WHAT IT IS FOR
+
+The goal is to derive where fish are and how much of them there is from mechanism rather
+than from fitted statistical envelopes. A species' range in fishNET is not prescribed;
+it is the outcome of temperature tolerance, oxygen, prey availability, bathymetry,
+transport and the evolving movement behaviour of the fish themselves. That makes the
+model suited to questions that a correlative distribution model cannot answer: how
+ranges shift under a warming or deoxygenating ocean, whether a population adapts or
+moves or collapses, how fishing pressure interacts with climate stress, how thermal
+tolerance and life history evolve under selection, and how much carbon fish move from
+the surface to depth. Because the same run produces biomass, catch, size structure,
+spatial distribution and genetic change together, these questions can be asked of one
+internally consistent system rather than of separate models.
+
+CURRENT CONFIGURATION
+
+The present setup carries 23 species spanning six functional groups - small pelagic
+forage fish, continental shelf groundfish, large oceanic pelagics, benthic flatfish and
+batoids, mesopelagic plankton feeders, and polar specialists - chosen to represent the
+main pathways by which energy moves through the ocean rather than to be an inventory of
+commercial stocks. Each species is given a broad starting region using named latitude,
+longitude and depth sectors, but that placement constrains only where it begins:
+afterwards fish move, drift, spawn and shift their distributions wherever conditions and
+their own evolving behaviour take them. The global configuration runs on a smooth annual
+climatology built from GLORYS ocean reanalysis, fitted as an annual plus semiannual
+harmonic so that the seasonal cycle is continuous and loops seamlessly for multi-year
+runs.
+
+VALIDATION
+
+fishNET ships a self-test suite covering conservation, positivity, transport, genetics,
+aggregation round-trips, determinism and consistency between the individual and biomass
+representations. Against the real world, runs are scored on spawning stock biomass,
+catch, community size spectra and documented events such as stock collapses, using
+observational data assembled from public sources: the RAM Legacy stock assessment
+database, ICES assessment and trawl survey archives, tuna commission catch records
+including spatially gridded catch, and occurrence records from OBIS and GBIF.
+
+LIMITATIONS WORTH STATING
+
+Species parameters are literature-plausible but not calibrated against stock
+assessments, so absolute biomass should be treated as provisional until fitted. A looped
+climatology contains no interannual variability, so it can reproduce a mean state and a
+seasonal cycle but cannot match a specific year or a dated collapse; that requires
+forcing from the full reanalysis record. Mesopelagic biomass, though probably the
+largest fish biomass in the ocean, is known only to within about an order of magnitude,
+so the lanternfish and bristlemouth components are order-of-magnitude estimates rather
+than constrained quantities. And the ocean is prescribed: the fish do not feed back on
+the physics.

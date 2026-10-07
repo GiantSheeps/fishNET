@@ -1,0 +1,55 @@
+# Pacific bluefin (Thunnus orientalis) - trans-Pacific endotherm
+name = "bluefin_pacific"
+group = "large_pelagic"   # dashboard grouping only; the model ignores it
+color = "#a83232"
+length_weight = [0.02, 2.95]
+L_inf = 280.0
+L_juv = 3.0
+lifespan_days = 9100
+egg_days = 1.8
+T_ref = 19.0
+cmax = 0.5
+alpha = 0.8
+K_food = 0.01
+f_crit = 0.2
+c_swim = 0.85
+reserve_max = 0.3
+kappa_R = 0.6
+gonad_frac = 0.1
+spawn_doy = [120, 200]  # day-of-year window (wraps through New Year if start > end)
+spawning_grounds = [[125.0, 24.0], [135.0, 38.0]]   # lon, lat: ripe fish head for the nearest (2026-09-26); they may still spawn anywhere
+m0 = 0.003
+m_early = 0.2
+K_nursery = 0.5   # g m-2; back to 0.5 (2026-09-26): at 5, juvenile tunas feeding on plankton exploded (x60-250 in a year)
+K_adult = 0.5   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.015
+fishing_L50_L95 = [130.0, 185.0]
+lat_sectors = ["n_temperate"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+lon_sectors = ["pacific_c", "pacific_e", "pacific_w"]
+depth_range = [0, 600]  # m (clipped to the model's deepest level)
+A_o = 0.3  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 3.5
+m_hypoxia = 0.5
+larva_depth_max = 50
+prey_size_ratio = 0.15
+prey_size_sd = 1.0
+diet = { zoo = 0.15 }
+plankton_L_max = 60.0   # cm: krill-type prey until then (2026-09-26, after two 240-day checks); starved at 30-40
+larva_diet = { zoo = 1.0 }
+fish_diet = { squid = 0.7, sardine_pacific = 1.0, pollock = 0.4, lanternfish = 0.4, anchoveta = 0.5, anchovy = 0.6 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [19.0, 2.0, 0.4]
+T_width = [8.0, 0.8, 0.3]
+speed = [1.2, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [150.0, 13.0, 0.4]
+egg_mass = [0.0008, 0.00015, 0.3]
+w_therm = [2.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [0.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [0.0, 0.5, 0.3]
+w_home = [6.0, 0.5, 0.3]
+w_shelf = [-0.8, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

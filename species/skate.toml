@@ -1,0 +1,55 @@
+# Raja spp. and Dasyatidae - slow, low-fecundity cartilaginous bottom foragers
+name = "skate"
+group = "benthic"   # dashboard grouping only; the model ignores it
+color = "#c49bd6"
+length_weight = [0.0035, 3.2]
+L_inf = 110.0
+L_juv = 12.0
+lifespan_days = 9100
+egg_days = 150.0
+T_ref = 9.0
+cmax = 0.16
+alpha = 0.72
+K_food = 0.18
+f_crit = 0.2
+c_swim = 0.15
+reserve_max = 0.3
+kappa_R = 0.35
+gonad_frac = 0.22
+spawn_doy = [1, 365]  # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0018
+m_early = 0.03
+K_nursery = 0.3
+K_adult = 3   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.05
+fishing_L50_L95 = [55.0, 80.0]
+lat_sectors = ["n_temperate", "n_polar", "s_temperate"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_range = [20, 500]  # m (clipped to the model's deepest level)
+demersal = true  # pinned to the sea bed
+bottom_max_m = 800.0  # keeps it off water deeper than its shelf/slope habitat
+A_o = 0.6  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.8
+m_hypoxia = 0.12
+larva_depth_max = 200
+prey_size_ratio = 0.09
+prey_size_sd = 1.6
+diet = { zoo = 0.2, detritus = 1.0 }
+plankton_L_max = 25.0
+larva_diet = { zoo = 1.0 }
+fish_diet = { flounder = 0.4, sardine_eu = 0.2 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [9.0, 1.5, 0.4]
+T_width = [5.0, 0.5, 0.3]
+speed = [0.35, 0.15, 0.3]
+metab = [0.85, 0.1, 0.3]
+L_mat = [70.0, 6.0, 0.4]
+egg_mass = [6.0, 1.0, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-2.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [2.5, 0.5, 0.3]
+w_shelf = [3.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

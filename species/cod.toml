@@ -1,0 +1,53 @@
+# Boreal demersal generalist predator (Gadus-like)
+name = "cod"
+group = "groundfish"
+color = "#2ca02c"
+length_weight = [0.0075, 3.05]
+L_inf = 110.0
+L_juv = 4.0
+lifespan_days = 7000
+egg_days = 14.0
+T_ref = 6.0
+cmax = 0.3
+alpha = 0.75
+K_food = 0.15
+f_crit = 0.2                      # critical feeding level (maintenance) at L_inf
+c_swim = 0.3
+reserve_max = 0.35
+kappa_R = 0.6
+gonad_frac = 0.12
+spawn_doy = [40, 120]
+# spawning_grounds unset: ripe fish home to their own birth place and to conspecific aggregations
+m0 = 0.004
+m_early = 0.15
+K_nursery = 0.5                   # g m-2 of same-stage conspecific young at which their natural mortality doubles
+m_thermal = 0.05
+fishing_L50_L95 = [45.0, 60.0]
+depth_range = [25, 600]
+demersal = true                   # lives on the sea bed (pinned to the bottom cell)
+A_o = 0.55                        # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.0                    # metabolic index needed for full activity
+m_hypoxia = 0.15                  # d-1 mortality when the index falls below 1
+larva_depth_max = 100
+prey_size_ratio = 0.1
+prey_size_sd = 1.5
+diet = { zoo = 0.6, krill = 0.5, detritus = 0.25 }   # krill and benthic invertebrates (detritus = benthos proxy)
+plankton_L_max = 30.0
+larva_diet = { zoo = 1.0, krill = 0.2 }
+fish_diet = { warm_sardine = 0.4, sardine = 0.4, flatfish = 0.5, cod = 0.3 }
+
+[traits]
+T_opt = [8.0, 1.0, 0.4]
+T_width = [4.0, 0.4, 0.3]
+speed = [0.8, 0.12, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [55.0, 5.0, 0.4]
+egg_mass = [0.0015, 0.0003, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-2.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [0.0, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [2.0, 0.5, 0.3]      # + shallow water, - open ocean (evolves)
+spawn_shift = [0.0, 8.0, 0.3]   # days: heritable shift of the spawning window (temporal isolation)

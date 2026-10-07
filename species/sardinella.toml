@@ -1,0 +1,54 @@
+# Sardinellas (genus Sardinella): Indian oil sardine, round and Madeiran sardinella, goldstripe, Brazilian
+# sardinella. The tropical and subtropical small pelagics of the Indian Ocean, West Africa, SE Asia, the
+# Caribbean and Brazil, added 2026-09-26 so those waters are not empty niches for temperate forage fish to invade.
+name = "sardinella"
+group = "forage"   # dashboard grouping only; the model ignores it
+color = "#9edae5"
+length_weight = [0.0085, 3.05]
+L_inf = 23.0
+L_juv = 3.0
+lifespan_days = 1500
+egg_days = 1.5
+T_ref = 25.0
+cmax = 0.11
+alpha = 0.7
+K_food = 0.08
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.08
+spawn_doy = [60, 300]  # day-of-year window (long tropical season)
+m0 = 0.0055
+m_early = 0.14
+K_nursery = 1.0   # g m-2 (2026-09-26, after two 240-day checks): recruitment booms of x30-60 at 3-8
+K_adult = 20   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.05
+fishing_L50_L95 = [11.0, 15.0]
+lat_sectors = ["tropical"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_range = [0, 100]  # m (clipped to the model's deepest level)
+A_o = 0.5  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.2
+m_hypoxia = 0.25
+larva_depth_max = 80
+prey_size_ratio = 0.01
+prey_size_sd = 2.0
+diet = { phyto = 0.6, zoo = 1.0 }
+larva_diet = { phyto = 0.2, zoo = 1.0 }
+fish_diet = { sardinella = 0.15 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [26.0, 1.2, 0.4]
+T_width = [4.0, 0.4, 0.3]
+speed = [1.8, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [14.0, 1.2, 0.4]
+egg_mass = [0.001, 0.00015, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-3.0, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [1.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

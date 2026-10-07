@@ -1,0 +1,55 @@
+# Atlantic bluefin (Thunnus thynnus) - endothermic, high-latitude forager
+name = "bluefin_atlantic"
+group = "large_pelagic"   # dashboard grouping only; the model ignores it
+color = "#8b1a1a"
+length_weight = [0.02, 2.95]
+L_inf = 300.0
+L_juv = 3.0
+lifespan_days = 14600
+egg_days = 1.8
+T_ref = 18.0
+cmax = 0.5
+alpha = 0.8
+K_food = 0.01
+f_crit = 0.2
+c_swim = 0.85
+reserve_max = 0.3
+kappa_R = 0.6
+gonad_frac = 0.1
+spawn_doy = [140, 200]  # day-of-year window (wraps through New Year if start > end)
+spawning_grounds = [[-90.0, 26.0], [3.0, 39.0], [30.0, 34.0]]   # lon, lat: ripe fish head for the nearest (2026-09-26); they may still spawn anywhere
+m0 = 0.0028
+m_early = 0.2
+K_nursery = 0.5   # g m-2; back to 0.5 (2026-09-26): at 5, juvenile tunas feeding on plankton exploded (x60-250 in a year)
+K_adult = 0.5   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.015
+fishing_L50_L95 = [140.0, 200.0]
+lat_sectors = ["n_temperate", "n_polar"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+lon_sectors = ["atlantic_w", "atlantic_e", "africa"]
+depth_range = [0, 600]  # m (clipped to the model's deepest level)
+A_o = 0.3  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 3.5
+m_hypoxia = 0.5
+larva_depth_max = 50
+prey_size_ratio = 0.15
+prey_size_sd = 1.0
+diet = { zoo = 0.15 }
+plankton_L_max = 60.0   # cm: krill-type prey until then (2026-09-26, after two 240-day checks); starved at 30-40
+larva_diet = { zoo = 1.0 }
+fish_diet = { squid = 0.7, herring = 1.0, sardine_eu = 0.8, capelin = 0.6, lanternfish = 0.4, anchovy = 0.6, sardinella = 0.3 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [18.0, 2.0, 0.4]
+T_width = [8.0, 0.8, 0.3]
+speed = [1.2, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [190.0, 15.0, 0.4]
+egg_mass = [0.0008, 0.00015, 0.3]
+w_therm = [2.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [0.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [0.0, 0.5, 0.3]
+w_home = [6.0, 0.5, 0.3]
+w_shelf = [-0.8, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

@@ -1,0 +1,56 @@
+# Sardinops sagax - California, Humboldt, Benguela and Kuroshio stocks
+name = "sardine_pacific"
+group = "forage"   # dashboard grouping only; the model ignores it
+color = "#6fb3e8"
+length_weight = [0.0085, 3.05]
+L_inf = 30.0
+L_juv = 3.0
+lifespan_days = 4700
+egg_days = 3.0
+T_ref = 16.0
+cmax = 0.11
+alpha = 0.7
+K_food = 0.08
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.08
+spawn_doy = [60, 150]  # day-of-year window (wraps through New Year if start > end)
+spawning_grounds = [[-119.0, 33.0], [-73.0, -20.0], [135.0, 33.0], [15.0, -30.0], [137.0, -35.0]]   # lon, lat: ripe fish head for the nearest (2026-09-26); they may still spawn anywhere
+m0 = 0.0045
+m_early = 0.14
+K_nursery = 8.0
+K_adult = 50   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.05
+fishing_L50_L95 = [15.0, 19.0]
+# California Current, Humboldt, Kuroshio/Japan, Benguela and southern Australia (lon0 lon1 lat0 lat1).
+# Starting distribution only.
+seed_range = [[-130.0, -105.0, 22.0, 50.0], [-86.0, -69.0, -40.0, -5.0], [125.0, 150.0, 25.0, 45.0],
+              [5.0, 20.0, -36.0, -15.0], [113.0, 155.0, -40.0, -30.0]]
+depth_range = [0, 150]  # m (clipped to the model's deepest level)
+A_o = 0.45  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.5
+m_hypoxia = 0.25
+larva_depth_max = 80
+prey_size_ratio = 0.01
+prey_size_sd = 2.0
+diet = { phyto = 0.5, zoo = 1.0 }
+larva_diet = { phyto = 0.2, zoo = 1.0 }
+fish_diet = { sardine_pacific = 0.2 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [16.5, 1.3, 0.4]
+T_width = [4.5, 0.45, 0.3]
+speed = [1.8, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [17.0, 1.5, 0.4]
+egg_mass = [0.0011, 0.0002, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-3.0, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [4.0, 0.5, 0.3]
+w_shelf = [1.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

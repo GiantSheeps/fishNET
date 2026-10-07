@@ -1,0 +1,53 @@
+# Oceanic and Humboldt squids (Ommastrephidae) - voracious, fast-growing mid-trophic link
+name = "squid"
+group = "cephalopods"
+color = "#e377c2"
+length_weight = [0.007, 3.1]
+L_inf = 100.0
+L_juv = 3.0
+lifespan_days = 400
+egg_days = 4.0
+T_ref = 16.0
+cmax = 0.35
+alpha = 0.75
+K_food = 0.04
+f_crit = 0.2
+c_swim = 0.6
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.12
+spawn_doy = [1, 365]
+m0 = 0.008
+m_early = 0.18
+K_nursery = 2.0
+K_adult = 8.0
+m_thermal = 0.04
+fishing_L50_L95 = [30.0, 50.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]
+depth_sectors = ["epipelagic", "mesopelagic"]
+A_o = 0.65
+phi_crit = 1.8
+m_hypoxia = 0.15
+larva_depth_max = 80
+prey_size_ratio = 0.08
+prey_size_sd = 1.8
+plankton_L_max = 20.0
+diet = { zoo = 0.4, krill = 0.8 }
+larva_diet = { zoo = 0.8, krill = 0.2 }
+fish_diet = { lanternfish = 0.8, bristlemouth = 0.5, anchoveta = 0.6, sardine_eu = 0.5, sardine_pacific = 0.5, herring = 0.4, squid = 0.2 }
+
+[traits]
+T_opt = [16.0, 1.5, 0.4]
+T_width = [6.0, 0.6, 0.3]
+speed = [1.6, 0.15, 0.3]
+metab = [1.1, 0.1, 0.3]
+L_mat = [40.0, 4.0, 0.4]
+egg_mass = [0.0005, 0.0001, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-2.5, 1.0, 0.3]
+w_crowd = [0.5, 0.5, 0.3]
+w_light = [-3.0, 0.5, 0.3]
+w_home = [1.0, 0.5, 0.3]
+w_shelf = [-0.5, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

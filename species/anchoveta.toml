@@ -1,0 +1,55 @@
+# Peruvian anchoveta (Engraulis ringens) - Humboldt upwelling forage engine
+name = "anchoveta"
+group = "forage"   # dashboard grouping only; the model ignores it
+color = "#1f77b4"
+length_weight = [0.0085, 3.05]
+L_inf = 20.0
+L_juv = 3.0
+lifespan_days = 1100
+egg_days = 3.0
+T_ref = 17.0
+cmax = 0.11
+alpha = 0.7
+K_food = 0.06
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.08
+spawn_doy = [210, 300]  # day-of-year window (wraps through New Year if start > end)
+spawning_grounds = [[-79.0, -9.0], [-72.0, -18.0], [-73.0, -36.0]]   # lon, lat: ripe fish head for the nearest (2026-09-26); they may still spawn anywhere
+m0 = 0.006
+m_early = 0.14
+K_nursery = 3.0   # g m-2; lowered from 8 (2026-09-26): recruitment booms of x30-170 a year
+K_adult = 20   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.05
+fishing_L50_L95 = [10.0, 13.0]
+# Humboldt Current off Peru and Chile. Written as a box because the coast lies east of 90W, outside
+# the pacific_e sector, which seeded it in the open SE Pacific. Starting distribution only.
+seed_range = [[-90.0, -69.0, -35.0, -3.0]]
+depth_range = [0, 80]  # m (clipped to the model's deepest level)
+A_o = 0.55  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.0
+m_hypoxia = 0.25
+larva_depth_max = 80
+prey_size_ratio = 0.01
+prey_size_sd = 2.0
+diet = { phyto = 0.7, zoo = 1.0 }
+larva_diet = { phyto = 0.2, zoo = 1.0 }
+fish_diet = { anchoveta = 0.15 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [17.5, 1.2, 0.4]
+T_width = [3.0, 0.35, 0.3]
+speed = [1.8, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [12.0, 1.0, 0.4]
+egg_mass = [0.0009, 0.00015, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-3.0, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [4.0, 0.5, 0.3]
+w_shelf = [1.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

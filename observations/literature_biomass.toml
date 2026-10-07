@@ -1,0 +1,169 @@
+# Starting biomass per fishNET species, used when [run] initial_biomass = "literature".
+# Written by `python obsval.py --tables` on 2026-09-26. biomass_t is the global total in
+# tonnes; the model spreads it as biomass_t x 1e6 / 3.6e+14 m2, the namelists' convention.
+# Assessed species: the sum of their RAM Legacy stocks, which misses unassessed stocks (a lower bound).
+# Validating against RAM after starting from RAM is partly circular: compare the end state, not the start.
+
+[anchoveta]
+biomass_t = 12480000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 4 stocks' total biomass (TBbest), of 4 current stocks"
+
+[sardine_eu]
+biomass_t = 5792000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 7 stocks' total biomass (TBbest) and 3 stocks' spawning biomass where no total is given, of 13 current stocks"
+
+[sardine_pacific]
+biomass_t = 2076000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 4 stocks' total biomass (TBbest), of 5 current stocks"
+
+[herring]
+biomass_t = 16180000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 13 stocks' total biomass (TBbest) and 3 stocks' spawning biomass where no total is given, of 19 current stocks"
+
+[capelin]
+biomass_t = 2474000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 1 stocks' total biomass (TBbest) and 1 stocks' spawning biomass where no total is given, of 4 current stocks"
+
+[cod_atlantic]
+biomass_t = 4195000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 18 stocks' total biomass (TBbest) and 3 stocks' spawning biomass where no total is given, of 27 current stocks"
+
+[pollock]
+biomass_t = 21260000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 9 stocks' total biomass (TBbest) and 2 stocks' spawning biomass where no total is given, of 14 current stocks"
+
+[hake]
+biomass_t = 7594000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 12 stocks' total biomass (TBbest) and 9 stocks' spawning biomass where no total is given, of 27 current stocks"
+
+[skipjack]
+biomass_t = 5805000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 4 stocks' total biomass (TBbest), of 5 current stocks"
+
+[yellowfin]
+biomass_t = 9148000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 2 stocks' total biomass (TBbest) and 2 stocks' spawning biomass where no total is given, of 4 current stocks"
+
+[albacore]
+biomass_t = 1766000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 4 stocks' total biomass (TBbest) and 2 stocks' spawning biomass where no total is given, of 6 current stocks"
+
+[bluefin_atlantic]
+biomass_t = 283000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 0 stocks' total biomass (TBbest) and 2 stocks' spawning biomass where no total is given, of 2 current stocks"
+
+[bluefin_pacific]
+biomass_t = 66100.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 1 stocks' total biomass (TBbest), of 1 current stocks"
+
+[swordfish]
+biomass_t = 441100.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 5 stocks' total biomass (TBbest) and 1 stocks' spawning biomass where no total is given, of 7 current stocks"
+
+[halibut]
+biomass_t = 204400.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 3 stocks' total biomass (TBbest), of 4 current stocks"
+
+[greenland_halibut]
+biomass_t = 756500.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 3 stocks' total biomass (TBbest), of 6 current stocks"
+
+[flounder]
+biomass_t = 11510000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 36 stocks' total biomass (TBbest) and 12 stocks' spawning biomass where no total is given, of 70 current stocks"
+
+[skate]
+biomass_t = 177400.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 5 stocks' total biomass (TBbest) and 1 stocks' spawning biomass where no total is given, of 56 current stocks"
+
+[lanternfish]
+biomass_t = 1000000000.0
+low_t = 600000000.0
+high_t = 10000000000.0
+coverage = "global"
+source = "Myctophidae ~1 Gt from net surveys (Gjosaeter & Kawaguchi 1980, FAO Fish. Tech. Pap. 193). Acoustic surveys put all mesopelagic fish at 2-16 Gt (Irigoien et al. 2014, Nat. Commun. 5:3271, 11-15 Gt; Proud et al. 2019, ICES J. Mar. Sci. 76:718). The conservative net-based value is used."
+
+[bristlemouth]
+biomass_t = 300000000.0
+low_t = 30000000.0
+high_t = 3000000000.0
+coverage = "global, derived"
+source = "No direct biomass estimate exists. Cyclothone numbers are put at 1e14-1e16 fish, over half of all vertebrates at 100-1000 m; at ~0.3 g each that is 0.03-3 Gt, and the geometric middle is used."
+
+[polar_cod]
+biomass_t = 1000000.0
+low_t = 350000.0
+high_t = 2000000.0
+coverage = "Barents Sea only (lower bound)"
+source = "Barents Sea acoustic ecosystem survey: ~2 Mt in 2000, 0.36 Mt in 2017 (Institute of Marine Research / MOSJ indicator; Aune et al. 2021, Prog. Oceanogr.). Mid value used."
+
+[silverfish]
+biomass_t = 592000.0
+low_t = 326000.0
+high_t = 866000.0
+coverage = "Ross Sea shelf only (lower bound)"
+source = "Acoustic survey of the western Ross Sea shelf, Feb-Mar 2008: 592 kt, 95% CI 326-866 kt (O'Driscoll et al. 2011, Deep-Sea Res. II 58:181)."
+
+[toothfish]
+biomass_t = 85410.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 1 stocks' total biomass (TBbest), of 1 current stocks"
+
+[sardinella]
+biomass_t = 3000000.0
+low_t = 1500000.0
+high_t = 6000000.0
+coverage = "global, partly derived"
+source = "NW African round sardinella 1.17-1.43 Mt from R/V Dr Fridtjof Nansen acoustic surveys 2002-03 (FAO/CECAF); Indian oil sardine catches ~0.57 Mt/yr (Frontiers Mar. Sci. 2018, 5:443), about 1 Mt of fish at F ~ 0.5; SE Asian, Gulf of Guinea and Brazilian sardinellas taken as roughly as much again."
+
+[anchovy]
+biomass_t = 9348000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 12 stocks' total biomass (TBbest) and 6 stocks' spawning biomass where no total is given, of 21 current stocks"
+
+[squid]
+biomass_t = 15000000.0
+low_t = 5000000.0
+high_t = 30000000.0
+coverage = "global oceanic"
+source = "Global oegopsid and neritic cephalopod biomass estimates (Rodhouse et al. 2014, Arkhipkin et al. 2015)."
+
+[shark]
+biomass_t = 3000000.0
+low_t = 1000000.0
+high_t = 6000000.0
+coverage = "global pelagic"
+source = "Global pelagic shark biomass estimates (Dulvy et al. 2014, Worm et al. 2013)."
+
+[whale]
+biomass_t = 8000000.0
+low_t = 4000000.0
+high_t = 15000000.0
+coverage = "global"
+source = "Global baleen whale biomass estimates (IWC, Christensen 2006, Roman et al. 2014)."
+
+[dolphin]
+biomass_t = 4000000.0
+low_t = 2000000.0
+high_t = 8000000.0
+coverage = "global"
+source = "Global oceanic odontocete/dolphin biomass estimates (Hammond et al., Barlow et al.)."
+

@@ -1,0 +1,56 @@
+# Merluccius spp. - mid-latitude shelf-break predator, strong diel depth migration
+name = "hake"
+group = "groundfish"   # dashboard grouping only; the model ignores it
+color = "#8fd18f"
+length_weight = [0.0075, 3.05]
+L_inf = 90.0
+L_juv = 4.0
+lifespan_days = 5500
+egg_days = 6.0
+T_ref = 11.0
+cmax = 0.28
+alpha = 0.75
+K_food = 0.15
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.35
+kappa_R = 0.6
+gonad_frac = 0.12
+spawn_doy = [120, 250]  # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0038
+m_early = 0.15
+K_nursery = 0.5
+K_adult = 3   # g m-2 of adults at which adult natural mortality doubles (2026-09-26, after two 240-day checks)
+m_thermal = 0.05
+fishing_L50_L95 = [32.0, 45.0]
+lat_sectors = ["n_temperate", "s_temperate"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+lon_sectors = ["atlantic_w", "atlantic_e", "africa", "pacific_e"]
+depth_range = [50, 600]  # m (clipped to the model's deepest level)
+demersal = false  # pinned to the sea bed
+bottom_max_m = 1000.0  # keeps it off water deeper than its shelf/slope habitat
+A_o = 0.55  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.0
+m_hypoxia = 0.15
+larva_depth_max = 100
+prey_size_ratio = 0.13
+prey_size_sd = 1.5
+diet = { zoo = 0.5, krill = 0.5, detritus = 0.1 }
+plankton_L_max = 20.0
+larva_diet = { zoo = 1.0, krill = 0.2 }
+fish_diet = { anchoveta = 1.0, sardine_pacific = 0.8, sardine_eu = 0.6, lanternfish = 0.5, hake = 0.4, anchovy = 0.4 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [11.0, 1.2, 0.4]
+T_width = [4.0, 0.4, 0.3]
+speed = [0.8, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [45.0, 4.0, 0.4]
+egg_mass = [0.001, 0.0002, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-2.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-2.0, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [2.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

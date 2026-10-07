@@ -1,0 +1,53 @@
+# Pelagic apex sharks (Prionace, Isurus, Carcharhinidae) - apex predator of open oceans
+name = "shark"
+group = "sharks"
+color = "#17becf"
+length_weight = [0.005, 3.1]
+L_inf = 350.0
+L_juv = 30.0
+lifespan_days = 9000
+egg_days = 150.0
+T_ref = 18.0
+cmax = 0.18
+alpha = 0.78
+K_food = 0.03
+f_crit = 0.2
+c_swim = 0.4
+reserve_max = 0.35
+kappa_R = 0.4
+gonad_frac = 0.08
+spawn_doy = [90, 240]
+m0 = 0.0015
+m_early = 0.03
+K_nursery = 0.3
+K_adult = 1.0
+m_thermal = 0.03
+fishing_L50_L95 = [120.0, 180.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]
+depth_range = [0, 600]
+A_o = 0.5
+phi_crit = 2.0
+m_hypoxia = 0.2
+larva_depth_max = 100
+prey_size_ratio = 0.2
+prey_size_sd = 1.5
+plankton_L_max = 15.0
+diet = {}
+larva_diet = { zoo = 0.5, krill = 0.8 }
+fish_diet = { squid = 1.0, swordfish = 0.4, skipjack = 0.6, yellowfin = 0.5, albacore = 0.5, sardine_eu = 0.5, sardine_pacific = 0.5, herring = 0.5, cod_atlantic = 0.4, skate = 0.5, flounder = 0.4, dolphin = 0.2 }
+
+[traits]
+T_opt = [18.0, 1.5, 0.4]
+T_width = [6.0, 0.6, 0.3]
+speed = [1.2, 0.15, 0.3]
+metab = [0.85, 0.1, 0.3]
+L_mat = [180.0, 15.0, 0.4]
+egg_mass = [20.0, 3.0, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-0.5, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [0.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

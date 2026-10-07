@@ -1,0 +1,53 @@
+# Oceanic dolphins and small toothed cetaceans (Delphinidae) - fast social pack hunter
+name = "dolphin"
+group = "mammals"
+color = "#d95f02"
+length_weight = [0.009, 3.05]
+L_inf = 260.0
+L_juv = 70.0
+lifespan_days = 11000
+egg_days = 280.0
+T_ref = 18.0
+cmax = 0.22
+alpha = 0.8
+K_food = 0.03
+f_crit = 0.2
+c_swim = 0.8
+reserve_max = 0.35
+kappa_R = 0.45
+gonad_frac = 0.07
+spawn_doy = [60, 180]
+m0 = 0.0018
+m_early = 0.03
+K_nursery = 0.3
+K_adult = 1.0
+m_thermal = 0.03
+fishing_L50_L95 = [150.0, 200.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]
+depth_range = [0, 300]
+A_o = 0.85
+phi_crit = 1.3
+m_hypoxia = 0.08
+larva_depth_max = 80
+prey_size_ratio = 0.1
+prey_size_sd = 1.6
+plankton_L_max = 10.0
+diet = {}
+larva_diet = { krill = 0.8, zoo = 0.5 }
+fish_diet = { squid = 0.9, anchoveta = 0.8, sardine_eu = 0.8, sardine_pacific = 0.8, herring = 0.7, lanternfish = 0.6, hake = 0.4 }
+
+[traits]
+T_opt = [18.0, 1.5, 0.4]
+T_width = [7.0, 0.7, 0.3]
+speed = [1.8, 0.15, 0.3]
+metab = [1.1, 0.1, 0.3]
+L_mat = [170.0, 12.0, 0.4]
+egg_mass = [12.0, 1.5, 0.3]
+w_therm = [2.5, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-1.5, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [2.5, 0.5, 0.3]
+w_shelf = [0.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

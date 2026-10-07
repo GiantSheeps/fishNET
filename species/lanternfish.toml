@@ -1,0 +1,51 @@
+# Benthosema/Ceratoscopelus - the diel vertical migration archetype
+name = "lanternfish"
+group = "mesopelagic"   # dashboard grouping only; the model ignores it
+color = "#7f7f7f"
+length_weight = [0.0045, 3.1]
+L_inf = 9.0
+L_juv = 1.2
+lifespan_days = 1500
+egg_days = 4.0
+T_ref = 8.0
+cmax = 0.09
+alpha = 0.68
+K_food = 0.05
+f_crit = 0.18
+c_swim = 0.25
+reserve_max = 0.35
+kappa_R = 0.65
+gonad_frac = 0.07
+spawn_doy = [90, 250]  # day-of-year window (wraps through New Year if start > end)
+m0 = 0.006
+m_early = 0.16
+K_nursery = 10.0
+K_adult = 30   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.04
+fishing_L50_L95 = [1000.0, 2000.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate", "n_polar"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_sectors = ["epipelagic", "mesopelagic"]
+A_o = 0.85  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.3
+m_hypoxia = 0.05
+larva_depth_max = 100
+prey_size_ratio = 0.02
+prey_size_sd = 1.8
+diet = { zoo = 1.0 }
+larva_diet = { zoo = 1.0 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [12.0, 1.5, 0.4]   # Myctophidae span -2 to 28 C and rise to warm water at night (2026-09-26)
+T_width = [10.0, 1.0, 0.3]
+speed = [1.2, 0.15, 0.3]
+metab = [0.7, 0.1, 0.3]
+L_mat = [5.0, 0.6, 0.4]
+egg_mass = [0.0004, 8e-05, 0.3]
+w_therm = [2.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-3.0, 1.0, 0.3]
+w_crowd = [0.5, 0.5, 0.3]
+w_light = [-5.0, 0.5, 0.3]
+w_home = [0.5, 0.5, 0.3]
+w_shelf = [-2.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

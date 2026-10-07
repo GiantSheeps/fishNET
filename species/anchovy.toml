@@ -1,0 +1,58 @@
+# Anchovies of the genus Engraulis other than anchoveta: European (E. encrasicolus), Japanese (E. japonicus),
+# northern (E. mordax), Cape (E. capensis), Argentine (E. anchoita) and Australian (E. australis). Temperate
+# forage fish of both hemispheres, added 2026-09-26 so southern shelves are not empty niches to invade.
+name = "anchovy"
+group = "forage"   # dashboard grouping only; the model ignores it
+color = "#5fa2dd"
+length_weight = [0.0085, 3.05]
+L_inf = 18.0
+L_juv = 3.0
+lifespan_days = 1300
+egg_days = 2.5
+T_ref = 16.0
+cmax = 0.11
+alpha = 0.7
+K_food = 0.06
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.08
+spawn_doy = [90, 270]  # day-of-year window (spring-summer in the north; the south shifts via spawn_shift)
+spawning_grounds = [[-3.0, 45.0], [5.0, 42.0], [33.0, 44.0], [18.0, -33.0], [133.0, 34.0], [-119.0, 33.0], [-57.0, -38.0], [150.0, -34.0]]   # lon, lat
+m0 = 0.006
+m_early = 0.14
+K_nursery = 8.0
+K_adult = 50   # g m-2 of adults at which adult natural mortality doubles
+m_thermal = 0.05
+fishing_L50_L95 = [9.0, 12.0]
+# Europe, Mediterranean and Black Sea; Japan and China; California Current; Benguela; Argentina and S Brazil;
+# southern Australia and New Zealand (lon0 lon1 lat0 lat1). Starting distribution only.
+seed_range = [[-20.0, 42.0, 30.0, 60.0], [115.0, 145.0, 20.0, 45.0], [-125.0, -105.0, 22.0, 45.0],
+              [5.0, 25.0, -37.0, -15.0], [-65.0, -45.0, -45.0, -22.0], [110.0, 180.0, -47.0, -25.0]]
+depth_range = [0, 100]  # m (clipped to the model's deepest level)
+A_o = 0.5  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.2
+m_hypoxia = 0.25
+larva_depth_max = 80
+prey_size_ratio = 0.01
+prey_size_sd = 2.0
+diet = { phyto = 0.5, zoo = 1.0 }
+larva_diet = { phyto = 0.2, zoo = 1.0 }
+fish_diet = { anchovy = 0.15 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [16.0, 1.2, 0.4]
+T_width = [4.0, 0.4, 0.3]
+speed = [1.8, 0.15, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [11.0, 1.0, 0.4]
+egg_mass = [0.0009, 0.00015, 0.3]
+w_therm = [4.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-3.0, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [4.0, 0.5, 0.3]
+w_shelf = [1.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

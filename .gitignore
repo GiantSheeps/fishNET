@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Forcing data (large files)
+forcing*/
+
+# Runs / output data
+runs/
+*.pkl
+*.mp4
+*.gif
+
+# Large observation files
+observations/**/*.nc
+observations/**/*.zip
+
+# Large data formats
+*.nc
+*.zip
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store

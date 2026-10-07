@@ -1,0 +1,56 @@
+# Reinhardtius hippoglossoides - deep cold slope flatfish
+name = "greenland_halibut"
+group = "benthic"   # dashboard grouping only; the model ignores it
+color = "#a0706b"
+length_weight = [0.0095, 3.15]
+L_inf = 110.0
+L_juv = 2.5
+lifespan_days = 9100
+egg_days = 20.0
+T_ref = 2.0
+cmax = 0.22
+alpha = 0.72
+K_food = 0.18
+f_crit = 0.2
+c_swim = 0.15
+reserve_max = 0.3
+kappa_R = 0.6
+gonad_frac = 0.1
+spawn_doy = [300, 60]  # day-of-year window (wraps through New Year if start > end)
+spawning_grounds = [[-57.0, 64.0], [12.0, 70.0], [-175.0, 59.0]]   # lon, lat: ripe fish head for the nearest (2026-09-26); they may still spawn anywhere
+m0 = 0.0032
+m_early = 0.16
+K_nursery = 0.6
+K_adult = 3   # g m-2 of adults at which adult natural mortality doubles (2026-09-26)
+m_thermal = 0.05
+fishing_L50_L95 = [45.0, 65.0]
+lat_sectors = ["n_polar"]  # starting distribution only: fish may swim, drift and spawn anywhere afterwards
+depth_range = [200, 600]  # m (clipped to the model's deepest level)
+demersal = true  # pinned to the sea bed
+bottom_max_m = 2000.0  # keeps it off water deeper than its shelf/slope habitat
+A_o = 0.6  # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.8
+m_hypoxia = 0.12
+larva_depth_max = 60
+prey_size_ratio = 0.12
+prey_size_sd = 1.6
+diet = { zoo = 0.4, krill = 0.4, detritus = 0.3 }
+plankton_L_max = 25.0
+larva_diet = { zoo = 1.0, krill = 0.2 }
+fish_diet = { capelin = 0.8, polar_cod = 0.7, lanternfish = 0.5 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [2.0, 0.8, 0.4]
+T_width = [2.5, 0.3, 0.3]
+speed = [0.6, 0.15, 0.3]
+metab = [0.85, 0.1, 0.3]
+L_mat = [60.0, 6.0, 0.4]
+egg_mass = [0.0022, 0.0004, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-2.0, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-2.0, 0.5, 0.3]
+w_home = [5.0, 0.5, 0.3]
+w_shelf = [3.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]
