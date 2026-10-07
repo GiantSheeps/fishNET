@@ -37,3 +37,7 @@ venv.bak/
 
 # OS files
 .DS_Store
+
+# Personal documents
+WHITEPAPER.txt
+ROADMAP.md
