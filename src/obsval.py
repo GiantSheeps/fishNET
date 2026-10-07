@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "observations"
 CACHE = OBS / "processed" / "validation_products.json"
 VERSION = 6

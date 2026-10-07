@@ -21,8 +21,9 @@ from urllib.parse import urlparse, parse_qs, unquote
 import numpy as np
 import netCDF4 as nc
 
-ROOT = Path(__file__).resolve().parent
-WEB = ROOT / "webui"
+SRC = Path(__file__).resolve().parent
+ROOT = SRC.parent
+WEB = SRC / "webui"
 RUNS_DEFAULT = ROOT / "runs"
 CONFIG_DIR = RUNS_DEFAULT / "_configs"
 
@@ -141,7 +142,7 @@ class Runner:
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         cfg_path = CONFIG_DIR / f"{run_name}.toml"
         cfg_path.write_text(cfg_text)
-        cmd = [sys.executable, "-u", str(ROOT / "fishnet.py"), str(cfg_path)]
+        cmd = [sys.executable, "-u", str(SRC / "fishnet.py"), str(cfg_path)]
         if ensemble:
             cmd += ["--ensemble", str(ensemble)]
         if resume:
@@ -606,7 +607,7 @@ class Handler(BaseHTTPRequestHandler):
             run = body.get("run", "")
             if not valid_run(run):
                 return self.send_error_json(404, "no such run")
-            cmd = [sys.executable, "-u", str(ROOT / "plot.py"), str(run_dir(run))]
+            cmd = [sys.executable, "-u", str(SRC / "plot.py"), str(run_dir(run))]
             if body.get("no_anim", True):
                 cmd.append("--no-anim")
             subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

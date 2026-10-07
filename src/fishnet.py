@@ -971,7 +971,7 @@ def haversine(lon1, lat1, lon2, lat2):
 def find_file(path):
     """A data file named in a namelist: as given (relative to the working directory), else next to fishnet.py."""
     p = Path(path)
-    return p if p.exists() or p.is_absolute() else (Path(__file__).resolve().parent / p)
+    return p if p.exists() or p.is_absolute() else (Path(__file__).resolve().parent.parent / p)
 
 
 def woa_field(path, g, var="o_an", scale=1.025):
