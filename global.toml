@@ -1,40 +1,54 @@
+# HINDCAST (2026-09-26): 1993-2012 on real GLORYS monthly forcing (dated, not looped), warm-started from the
+# spinup_1993 run's final state, with year-by-year RAM Legacy fishing (x1.0, by FAO area). Validate year by
+# year in the dashboard's Validation tab. No spin-up: the warm start already carries a settled ecosystem.
+
 # fishNET run namelist
 
 [run]
-name = "global"
+warm_start = "runs/spinup_1993"
+restart_every_days = 365
+name = "hindcast_1993_2012"
 out_dir = "runs"
-start = "2000-01-01T00:00"
-days = 1460
-dt_hours = 6
-spinup_days = 30                 # settle fish and plankton for this long before day 0 (not written out; 0 = off)
+start = "1993-01-01T00:00"
+days = 7305   # 20 years, 1993-01-01 .. 2012-12-31 (forcing ends there; a longer run would loop back to 1993)
+dt_hours = 12
+spinup_days = 0   # settle fish and plankton for this long before day 0 (not written out; 0 = off)
 spinup_cycle_days = 7            # ...while replaying the first this-many days of the forcing
-initial_biomass = "namelist"     # or "literature": observations/literature_biomass.toml (see global_species.toml)
-# warm_start = "runs/<name>"     # start from an earlier run's fish (its newest restart, or a restart .pkl); the grid must match
+initial_biomass = "literature"   # "namelist" (the biomass below) or "literature" (observations/literature_biomass.toml)
+literature_biomass = "observations/literature_biomass.toml"   # from `python obsval.py --tables`; cites a source per species
+# warm_start = "runs/global_clim_5yr_gui_2"   # start from an earlier run's fish (a run folder = its newest restart,
+#                                             # or a restart .pkl); overrides the initial biomass; the grid must match
+warm_start_plankton = true       # with warm_start: also take that run's plankton and nutrients (oxygen stays WOA)
 seed = 1
-output_every_hours = 48      # gridded fields
-agent_output_every_hours = 240   # agent snapshots (these files grow fast)
-restart_every_days = 30       # full model state for --resume (runs/<name>/restart/); 0 = off
-restart_keep = 2              # newest restart files kept (0 = all); each >= ~25 MB on 48x32, ~250 MB global
+output_every_hours = 240     # gridded fields, 10-daily (5 yr x 23 species x 180x80 is bulky)
+agent_output_every_hours = 1440   # agent snapshots (these files grow fast)
 log_every = 1                # print a status line every N steps
 species_log_every = 10       # per-species block every N steps (every step if verbose = 2)
 verbose = 1
 fishing_start_day = 0
 
 [grid]
+# Global, matched to forcing_global/forcing.nc (1 deg, lon -179.5..179.5, lat -79.5..89.5, 46
+# levels to 3992 m). Cell centres must lie inside the forcing or _load interpolates to NaN,
+# which nan_to_num then turns into a frozen, currentless ocean with no error raised.
 lon = [-180.0, 180.0]
 lat = [-80.0, 80.0]
-nx = 180
+nx = 180                     # 2-deg cells; the forcing is 1 deg, so still 2x oversampled
 ny = 80
-depth_edges = [0, 25, 75, 150, 300, 600, 1200, 2500, 4000]
-periodic_x = true
+depth_edges = [0, 25, 75, 150, 300, 600, 1200, 2500, 4000]   # deepest centre 3250 m < 3992 m of forcing
+periodic_x = true            # global domain wraps in longitude
 
 [ocean]
-geometry = "global"          # real coastlines, depth from distance offshore, wind-driven surface flow
-source = "synthetic"         # "synthetic" (analytic gyres, calibrated), "shallow_water" (eddying layered ocean), "netcdf"
-# file = "forcing.nc"        # netcdf: temp, u, v on (time, depth, lat, lon); time in days or datetime
-# names = { temp = "thetao", u = "uo", v = "vo", lon = "longitude", lat = "latitude" }
-# bathymetry = "static.nc"   # netcdf: bottom depth (default: inferred from the deepest valid level)
-# bathymetry_var = "deptho"
+sw_cache_dir = "runs/sw_cache"
+# geometry = "global"        # inert: source = "netcdf" short-circuits before the geometry branch.
+# Coastlines and bathymetry now come from the forcing file itself, not from the synthetic geometry.
+source = "netcdf"           # "synthetic" (analytic gyres), "shallow_water" (eddying), "netcdf"
+file = "forcing/forcing.nc"   # 240 dated GLORYS monthly means 1993-2012, mid-month stamps, 1 deg global
+bathymetry = "forcing_global/bathymetry.nc"   # global GLORYS deptho, native 1/12 deg
+bathymetry_var = "deptho"
+# names unset: thetao/uo/vo and longitude/latitude are auto-detected by _load
+# The climatology's time axis is a nominal year 2000 spanning exactly 365 days, so it loops
+# seamlessly: a 5-year run replays the same annual cycle five times, with no interannual signal.
 T_equator = 28.0             # global geometry: symmetric about the equator
 T_polar = -1.5
 shelf_km = 150.0             # width of the continental shelf
@@ -92,7 +106,12 @@ sw_seed = 0
 # amplitude = 3.0
 
 [npzd]
-O2_init = "profile"            # or "woa": World Ocean Atlas 2023 oxygen (observations/woa/woa23_all_o00_01.nc)
+O2_init = "woa"                # initial oxygen: "woa" (World Ocean Atlas 2023 annual mean) or "profile" (the
+O2_file = "observations/woa/woa23_all_o00_01.nc"   # saturation profile below). With "woa", the sea bed also relaxes
+                               # toward WOA instead of the constant O2_deep.
+detritus_food = "bed"          # detritus as fish food (the benthos proxy): "bed" = the detritus in sea-bed cells only;
+                               # "bed_flux" = only what sinks onto the bed each step (starved deep bottom fish in a
+                               # 1-year test); "pool" = the whole detritus pool anywhere (old)
 N_deep = 15.0
 N_surf = 2.0
 T_init_O2 = 12.0             # degC used for the initial oxygen saturation profile
@@ -125,6 +144,8 @@ upwelling_depth = 100.0
 export_bottom = true         # detritus sinking below the domain is exported
 
 [hybrid]
+juvenile_bins = 6            # progress bins toward maturity in biomass-cell juveniles (1 = one class: some fish mature
+                             # almost at once; 6 = Erlang-6 time to maturity with the same mean)
 reserve_spread = 0.5         # biomass cells: individual reserves assumed uniform within +/-50% of the class mean
 mode = "dynamic"             # "static", "dynamic", "all" or "none"
 regions = [{ lon = -14.0, lat = 36.0, radius_km = 500.0 }]
@@ -174,48 +195,175 @@ mate_choice_traits = ["T_opt"]   # traits she matches on
 
 # 0.284 + 0.023 + 0.043 + 0.017        (stray note, commented out: it is not valid TOML)
 
-[[species]]
-file = "species/sardine.toml"
-biomass = 0.284          # g/m2 set from the observed global stock (1e+08 t)
-fishing_F = 0.0              # 1/yr
-m0 = 0.0393                   # calibrated globally (ABC posterior median)
+# With [run] initial_biomass = "literature" (the current setting) the biomass values below are replaced by
+# observations/literature_biomass.toml; they are used only with initial_biomass = "namelist".
+# Initial biomass is g/m2 averaged over the whole ocean: fishNET spreads it across each
+# species' own sectors weighted by thermal suitability, so a range-restricted species
+# ends up dense inside its sectors and absent outside them.
+
+[fishing]
+# Year-by-year RAM Legacy fishing mortality, applied only in the FAO areas where each species has assessed stocks,
+# at the full assessed rate (scale = 1.0, since 2026-09-26). observations/ram_fishing_series.json holds it
+# (python obsval.py --tables). The per-species fishing_F values below are used only with mode = "constant".
+mode = "ram"                 # "ram" or "constant" (each species' fishing_F everywhere, all the time)
+file = "observations/ram_fishing_series.json"
+scale = 1.0                  # multiplies the RAM F (it was 0.5 in the 2026-09-24 runs)
+year = 0   # 0 = the calendar year of the model date; a year (e.g. 1993) fixes it, for spin-ups
+unassessed = 0.0             # fraction of the species' mean F applied in areas without assessed stocks
+
+# fishing_F below (used only with [fishing] mode = "constant") is RAM Legacy F SCALED DOWN BY 0.5.
+# Unscaled values (F_ram) and stock counts: observations/ram_fishing.toml. Species with no RAM stocks are unfished.
 
 [[species]]
-file = "species/warm_sardine.toml"
-biomass = 0.284          # g/m2 set from the observed global stock (1e+08 t)
-fishing_F = 0.0              # 1/yr
-m0 = 0.0393                   # calibrated globally (ABC posterior median)
+file = "species/anchoveta.toml"
+biomass = 0.02778           # 1e+07 t: Humboldt anchoveta, the largest single-species fishery
+fishing_F = 0.4975   # RAM Legacy F 0.9949 x 0.5 (SCALED DOWN), 4 of 4 stocks
+[[species]]
+file = "species/sardine_eu.toml"
+biomass = 0.005556          # 2e+06 t: NE Atlantic and Mediterranean pilchard
+fishing_F = 0.1588   # RAM Legacy F 0.3175 x 0.5 (SCALED DOWN), 10 of 13 stocks
 
 [[species]]
-file = "species/tuna.toml"
-biomass = 0.023          # g/m2 set from the observed global stock (8e+06 t)
+file = "species/sardine_pacific.toml"
+biomass = 0.01389           # 5e+06 t: Sardinops across four eastern-boundary stocks
+fishing_F = 0.0692   # RAM Legacy F 0.1384 x 0.5 (SCALED DOWN), 4 of 5 stocks
+
+[[species]]
+file = "species/sardinella.toml"
+biomass = 0.008333          # 3e+06 t: tropical sardinellas (Indian Ocean, W Africa, SE Asia, Brazil)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/anchovy.toml"
+biomass = 0.02597           # 9.3e+06 t: Engraulis anchovies other than anchoveta
+fishing_F = 0.1018   # RAM Legacy F 0.2035 x 0.5 (SCALED DOWN), 18 of 21 stocks
+
+[[species]]
+file = "species/herring.toml"
+biomass = 0.03333           # 1e+07 t: N Atlantic herring complex
+fishing_F = 0.0703   # RAM Legacy F 0.1406 x 0.5 (SCALED DOWN), 16 of 19 stocks
+
+[[species]]
+file = "species/capelin.toml"
+biomass = 0.01389           # 5e+06 t: Barents and NW Atlantic capelin
+fishing_F = 0.2111   # RAM Legacy F 0.4223 x 0.5 (SCALED DOWN), 2 of 4 stocks
+
+[[species]]
+file = "species/cod_atlantic.toml"
+biomass = 0.008333          # 3e+06 t: post-collapse Atlantic cod
+fishing_F = 0.3694   # RAM Legacy F 0.7388 x 0.5 (SCALED DOWN), 24 of 27 stocks
+
+[[species]]
+file = "species/pollock.toml"
+biomass = 0.04167           # 2e+07 t: Bering and Okhotsk walleye pollock
+fishing_F = 0.0905   # RAM Legacy F 0.181 x 0.5 (SCALED DOWN), 9 of 14 stocks
+[[species]]
+file = "species/hake.toml"
+biomass = 0.01389           # 5e+06 t: Merluccius spp. worldwide
+fishing_F = 0.345   # RAM Legacy F 0.6899 x 0.5 (SCALED DOWN), 24 of 27 stocks
+
+[[species]]
+file = "species/skipjack.toml"
+biomass = 0.01667           # 6e+06 t: skipjack, the bulk of tuna biomass
+fishing_F = 0.2296   # RAM Legacy F 0.4592 x 0.5 (SCALED DOWN), 4 of 5 stocks
+
+[[species]]
+file = "species/yellowfin.toml"
+biomass = 0.008333          # 3e+06 t: yellowfin across all three oceans
+fishing_F = 0.2934   # RAM Legacy F 0.5868 x 0.5 (SCALED DOWN), 3 of 4 stocks
+
+[[species]]
+file = "species/albacore.toml"
+biomass = 0.002222          # 8e+05 t: albacore, temperate tuna
+fishing_F = 0.0562   # RAM Legacy F 0.1125 x 0.5 (SCALED DOWN), 5 of 6 stocks
+
+[[species]]
+file = "species/bluefin_atlantic.toml"
+biomass = 0.001111          # 4e+05 t: Atlantic bluefin, heavily depleted
+fishing_F = 0.1295   # RAM Legacy F 0.259 x 0.5 (SCALED DOWN), 2 of 2 stocks
+
+[[species]]
+file = "species/bluefin_pacific.toml"
+biomass = 0.0008333         # 3e+05 t: Pacific bluefin, heavily depleted
+fishing_F = 0.2128   # RAM Legacy F 0.4257 x 0.5 (SCALED DOWN), 1 of 1 stocks
+[[species]]
+file = "species/swordfish.toml"
+biomass = 0.001389          # 5e+05 t: global swordfish
+fishing_F = 0.1457   # RAM Legacy F 0.2914 x 0.5 (SCALED DOWN), 6 of 7 stocks
+
+[[species]]
+file = "species/halibut.toml"
+biomass = 0.001389          # 5e+05 t: Pacific and Atlantic halibut
+fishing_F = 0.09   # RAM Legacy F 0.1799 x 0.5 (SCALED DOWN), 3 of 4 stocks
+
+[[species]]
+file = "species/greenland_halibut.toml"
+biomass = 0.002778          # 1e+06 t: Greenland halibut on Arctic slopes
+fishing_F = 0.0394   # RAM Legacy F 0.0787 x 0.5 (SCALED DOWN), 4 of 6 stocks
+
+[[species]]
+file = "species/flounder.toml"
+biomass = 0.01389           # 5e+06 t: shelf flounders and soles combined
+fishing_F = 0.027   # RAM Legacy F 0.0541 x 0.5 (SCALED DOWN), 47 of 70 stocks
+
+[[species]]
+file = "species/skate.toml"
+biomass = 0.005556          # 2e+06 t: skates and rays, slow to rebuild
+fishing_F = 0.0233   # RAM Legacy F 0.0465 x 0.5 (SCALED DOWN), 7 of 56 stocks
+
+[[species]]
+file = "species/lanternfish.toml"
+biomass = 5.556             # 2e+09 t: myctophids: the dominant mesopelagic biomass (1-10 Gt range)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/bristlemouth.toml"
+biomass = 2.778             # 1e+09 t: Cyclothone, the most numerous vertebrate genus on Earth
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/polar_cod.toml"
+biomass = 0.002778          # 1e+06 t: Arctic polar cod
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/silverfish.toml"
+biomass = 0.005556          # 2e+06 t: Antarctic silverfish, keystone shelf prey
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+[[species]]
+file = "species/toothfish.toml"
+biomass = 0.0002778         # 1e+05 t: Antarctic toothfish, top predator, small stock
+fishing_F = 0.0078   # RAM Legacy F 0.0157 x 0.5 (SCALED DOWN), 1 of 1 stocks
+
+[[species]]
+file = "species/squid.toml"
+biomass = 0.04167           # 1.5e+07 t: oceanic and coastal cephalopods
+fishing_F = 0.15
+
+[[species]]
+file = "species/shark.toml"
+biomass = 0.008333          # 3e+06 t: pelagic sharks (blue, mako, oceanic whitetip)
+fishing_F = 0.05
+
+[[species]]
+file = "species/whale.toml"
+biomass = 0.02222           # 8e+06 t: baleen whales (minke, fin, humpback)
 fishing_F = 0.0
-m0 = 0.0256                   # calibrated globally (ABC posterior median)
 
 [[species]]
-file = "species/warm_tuna.toml"
-biomass = 0.023          # g/m2 set from the observed global stock (8e+06 t)
+file = "species/dolphin.toml"
+biomass = 0.01111           # 4e+06 t: oceanic dolphins and small odontocetes
 fishing_F = 0.0
-m0 = 0.0256                   # calibrated globally (ABC posterior median)
-
-[[species]]
-file = "species/cod.toml"
-biomass = 0.043          # g/m2 set from the observed global stock (2e+07 t)
-fishing_F = 0.0
-m0 = 0.0079                   # calibrated globally (ABC posterior median)
-
-[[species]]
-file = "species/flatfish.toml"
-biomass = 0.017          # g/m2 set from the observed global stock (6e+06 t)
-fishing_F = 0.0
-m0 = 0.0454                   # calibrated globally (ABC posterior median)
 
 [calibration]                # python calibrate.py namelist.toml targets.toml --method abc
-[calibration.prior]          # global fit: natural mortality is the direct lever on standing stock
-"species.sardine.m0" = { min = 0.003, max = 0.08, log = true }
-"species.tuna.m0" = { min = 0.002, max = 0.05, log = true }
-"species.cod.m0" = { min = 0.003, max = 0.08, log = true }
-"species.flatfish.m0" = { min = 0.003, max = 0.08, log = true }
+[calibration.prior]
+"species.anchoveta.m0" = { min = 0.002, max = 0.08, log = true }
+"species.herring.m0" = { min = 0.002, max = 0.08, log = true }
+"species.cod_atlantic.m0" = { min = 0.002, max = 0.08, log = true }
+"species.pollock.m0" = { min = 0.002, max = 0.08, log = true }
+"species.skipjack.m0" = { min = 0.002, max = 0.08, log = true }
+"species.lanternfish.m0" = { min = 0.002, max = 0.08, log = true }
+          # global fit: natural mortality is the direct lever on standing stock
 
 [ensemble]                   # python fishnet.py namelist.toml --ensemble   (output in runs/<name>_ensemble/)
 method = "lhs"               # "grid" (all combinations), "oat" (one at a time), "lhs" (Latin hypercube), "random"
@@ -229,7 +377,4 @@ member_verbose = 0
 [ensemble.sweep]             # any namelist key, species.<name|*>.<key>, species.<name>.traits.<trait>.<0 mean|1 sd|2 h2>
 "ocean.warming_per_year" = { min = 0.0, max = 0.2 }
 "npzd.mu_max" = { min = 1.0, max = 2.0 }
-"species.*.m0" = { scale = [0.5, 1.0, 2.0] }
-"species.cod.fishing_F" = { min = 0.0, max = 0.6 }
-"species.sardine.traits.T_opt.2" = [0.0, 0.2, 0.4]
 "behavior.engine" = ["probabilistic", "softmax"]

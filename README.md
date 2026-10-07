@@ -5,6 +5,41 @@ cells and stage-structured biomass (with four moments of every heritable trait) 
 both representations feed, respire, die, mature and spawn through the same equations and
 couple two-way to an NPZD ocean driven by prescribed physics. Nitrogen is conserved to round-off.
 
+## Quickstart
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/fishNET.git
+   cd fishNET
+   
+2. Download the forcing data:
+The environmental forcing files are too large for GitHub. Download the
+forcing folder from [Google Drive Link] and place it in the root directory
+of this project so that it looks like fishNET/forcing/.
+
+Alternatively, if you don't want to download the pre-packaged files from Google Drive,
+you can use the built-in helper scripts to get started immediately:
+
+- **For a quick offline test run (no download required):**
+  Generate a dummy, lookalike forcing dataset locally:
+  ```bash
+  python make_test_forcing.py --out test_forcing
+
+• For a realistic run without an account:
+Stream HYCOM + NCODA reanalysis data directly (this downloads and thins the
+data automatically):
+python get_forcing_hycom.py --preset north_atlantic --start 2010-01-01 --
+end 2011-12-31
+
+• For published/production work (requires a free CMEMS account):
+Download real GLORYS data (requires pip install copernicusmarine):
+python get_forcing.py --preset north_atlantic --start 2010-01-01 --end
+2019-12-31
+
+
+
+3. Run the model:
+python fishnet.py --config namelist.toml
+
     python fishnet.py namelist.toml              # run (output in runs/<name>/)
     python fishnet.py namelist.toml --resume     # continue it from its newest restart file (see Restarts)
     python fishnet.py namelist.toml --ensemble        # parameter sweep (output in runs/<name>_ensemble/)
