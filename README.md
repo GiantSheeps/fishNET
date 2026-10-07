@@ -13,7 +13,7 @@ couple two-way to an NPZD ocean driven by prescribed physics.
    
 2. Download the forcing data:
 The environmental forcing files are too large for GitHub. Download the
-forcing folder from [Google Drive Link] and place it in the root directory
+forcing folder from https://drive.google.com/drive/folders/1pNwrvpmX-GixCRUxaFz_8CSD_2IlzT82?usp=sharing and place it in the root directory
 of this project so that it looks like fishNET/forcing/.
 
 Alternatively, if you don't want to download the pre-packaged files from Google Drive,
@@ -22,32 +22,32 @@ you can use the built-in helper scripts to get started immediately:
 - **For a quick offline test run (no download required):**
   Generate a dummy, lookalike forcing dataset locally:
   ```bash
-  python make_test_forcing.py --out test_forcing
+  python src/make_test_forcing.py --out test_forcing
 
 • For a realistic run without an account:
 Stream HYCOM + NCODA reanalysis data directly (this downloads and thins the
 data automatically):
-python get_forcing_hycom.py --preset north_atlantic --start 2010-01-01 --
+python src/get_forcing_hycom.py --preset north_atlantic --start 2010-01-01 --
 end 2011-12-31
 
 • For published/production work (requires a free CMEMS account):
 Download real GLORYS data (requires pip install copernicusmarine):
-python get_forcing.py --preset north_atlantic --start 2010-01-01 --end
+python src/get_forcing.py --preset north_atlantic --start 2010-01-01 --end
 2019-12-31
 
 
 
 3. Run the model:
-python fishnet.py --config namelist.toml
+python src/fishnet.py --config namelist.toml
 
-    python fishnet.py namelist.toml              # run (output in runs/<name>/)
-    python fishnet.py namelist.toml --resume     # continue it from its newest restart file (see Restarts)
-    python fishnet.py namelist.toml --ensemble        # parameter sweep (output in runs/<name>_ensemble/)
-    python fishnet.py namelist.toml --ensemble 40     # ...with 40 members, overriding the namelist
-    python plot.py runs/<name>                   # figures + animations (add --no-anim to skip movies)
-    python plot.py runs/<name>_ensemble          # ensemble spread, sensitivity heatmap, scatter
-    python validate.py                   # 60 checks, ~60 s (add --long for a 90-day consistency test)
-    python dashboard.py                  # browser GUI: launch runs and watch them as they go
+    python src/fishnet.py namelist.toml              # run (output in runs/<name>/)
+    python src/fishnet.py namelist.toml --resume     # continue it from its newest restart file (see Restarts)
+    python src/fishnet.py namelist.toml --ensemble        # parameter sweep (output in runs/<name>_ensemble/)
+    python src/fishnet.py namelist.toml --ensemble 40     # ...with 40 members, overriding the namelist
+    python src/plot.py runs/<name>                   # figures + animations (add --no-anim to skip movies)
+    python src/plot.py runs/<name>_ensemble          # ensemble spread, sensitivity heatmap, scatter
+    python src/validate.py                   # 60 checks, ~60 s (add --long for a 90-day consistency test)
+    python src/dashboard.py                  # browser GUI: launch runs and watch them as they go
 
 ## Files
 - `fishnet.py` model: grid, ocean forcing (synthetic basin or netCDF), NPZD, agents, biomass fields,
@@ -102,7 +102,7 @@ has assessed stocks**, times `scale` (1.0 = the assessed rate). `year = 1993` fi
 -ln(1 - catch/biomass) per stock averaged over the stocks assessed in each area, weighted by their biomass;
 years outside it take the nearest year. `mode = "constant"` (the default) uses each species' `fishing_F`
 everywhere, all the time; in `global_species.toml` those values are RAM F x 0.5, kept for comparison with
-the 2026-09-24 runs. Regenerate all the tables with `python obsval.py --tables`.
+the 2026-09-24 runs. Regenerate all the tables with `python src/obsval.py --tables`.
 
 ## Hindcast (real ocean years)
 `get_forcing_global.py --start 1993-01 --end 2012-12 --out forcing_glorys_1993_2012` streams GLORYS monthly
@@ -121,8 +121,8 @@ agents with their genes and learned behaviour, the random stream and any shallow
 48x32 Atlantic grid and 250 MB on the 180x80 global grid. It grows during the run, because it also holds
 the life-history records that `lifehist.nc` gets written from at the end.
 
-    python fishnet.py namelist.toml --resume                                   # newest restart file
-    python fishnet.py namelist.toml --resume runs/<name>/restart/restart_day00365.0.pkl
+    python src/fishnet.py namelist.toml --resume                                   # newest restart file
+    python src/fishnet.py namelist.toml --resume runs/<name>/restart/restart_day00365.0.pkl
 
 The run continues in the same folder and appends to its netCDF files. Anything written after the restart
 point (for example by a run that crashed a few days later) is dropped first, including chunks the crash
@@ -135,8 +135,8 @@ namelist; species parameters come from the restart. `dt_hours`, `start` and `[gr
 `dashboard.py` serves a browser GUI on http://127.0.0.1:8765 (standard library only; nothing to install
 beyond what the model already needs):
 
-    python dashboard.py                  # opens a browser
-    python dashboard.py --port 9000 --no-browser --host 127.0.0.1
+    python src/dashboard.py                  # opens a browser
+    python src/dashboard.py --port 9000 --no-browser --host 127.0.0.1
 
 Runs are launched with the same interpreter the dashboard itself runs under, so activate your
 environment first if the model needs packages from it (`global.toml` needs `global-land-mask`).
@@ -168,8 +168,8 @@ can be browsed and animated the same way without starting anything.
 ## Skill assessment
 `skill.py` scores a run against observations and writes a scorecard:
 
-    python skill.py runs/<name> observations.toml
-    python skill.py runs/<name> observations.toml --climatology runs/control --ensemble runs/x_ensemble/ensemble.nc
+    python src/skill.py runs/<name> observations.toml
+    python src/skill.py runs/<name> observations.toml --climatology runs/control --ensemble runs/x_ensemble/ensemble.nc
 
 `observations.toml` holds `[[target]]` entries (single numbers, same format calibration uses), `[[series]]`
 entries (observed time series), an optional `[size_spectrum]` slope, and `[[event]]` entries (an observed
@@ -182,8 +182,8 @@ with a control run, or the fitted seasonal cycle will swallow the event you are 
 ## Calibration
 `calibrate.py` fits species parameters to observations:
 
-    python calibrate.py namelist.toml targets.toml --method abc --members 60 --processes 4
-    python calibrate.py namelist.toml targets.toml --method emulator --members 60 --chain 20000
+    python src/calibrate.py namelist.toml targets.toml --method abc --members 60 --processes 4
+    python src/calibrate.py namelist.toml targets.toml --method emulator --members 60 --chain 20000
 
 Observations go in `targets.toml`, one `[[target]]` each (biomass, catch, chlorophyll, export or metabolic
 index) with a species, day range, value and uncertainty; priors go in the namelist under
@@ -208,7 +208,7 @@ distance offshore, seasons out of phase between hemispheres, and a wind-driven c
 and subpolar gyres in every basin plus a circumpolar current (`tau0`, `acc_u`, `wbc_cells`). At 2 degrees
 with 8 levels that is 9,613 ocean columns at roughly 2.5-3.5 s per 12-hour step on one core.
 
-    python fishnet.py global.toml
+    python src/fishnet.py global.toml
 
 Stocks in `global.toml` are initialised from observed global biomass and use mortalities fitted by ABC, so
 totals stay within 0.6-0.85x of observed over 90 days. The species files themselves are still tuned for a
@@ -246,9 +246,9 @@ See `ROADMAP.md` for the development plan toward a research model and what is do
   packed integers, epoch and subsetting to the grid are handled; `ocean.bathymetry` reads a static
   `deptho` file. Two helpers:
 
-      python get_forcing.py --preset north_atlantic --start 2010-01-01 --end 2019-12-31   # real GLORYS
-      python get_forcing_hycom.py --preset north_atlantic --start 2010-01-01 --end 2011-12-31  # real HYCOM
-      python make_test_forcing.py --out test_forcing                                      # offline lookalike
+      python src/get_forcing.py --preset north_atlantic --start 2010-01-01 --end 2019-12-31   # real GLORYS
+      python src/get_forcing_hycom.py --preset north_atlantic --start 2010-01-01 --end 2011-12-31  # real HYCOM
+      python src/make_test_forcing.py --out test_forcing                                      # offline lookalike
 
   `get_forcing.py` needs a free Copernicus Marine account and `pip install copernicusmarine`; it prints a
   namelist fragment matching what it downloaded. `get_forcing_hycom.py` needs **no account**: it pulls the
