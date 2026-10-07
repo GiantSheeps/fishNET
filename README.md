@@ -3,7 +3,7 @@
 Hybrid Lagrangian-Eulerian marine ecosystem model. Fish are tagged super-individuals in IBM
 cells and stage-structured biomass (with four moments of every heritable trait) elsewhere;
 both representations feed, respire, die, mature and spawn through the same equations and
-couple two-way to an NPZD ocean driven by prescribed physics. Nitrogen is conserved to round-off.
+couple two-way to an NPZD ocean driven by prescribed physics.
 
 ## Quickstart
 1. **Clone the repository:**
@@ -72,7 +72,7 @@ python fishnet.py --config namelist.toml
 ## Spin-up
 Before day 0 the model steps for `run.spinup_days` (default 30; 0 turns it off) while the forcing replays
 its first `run.spinup_cycle_days` (default 7). Nothing is written during the spin-up. The clock runs from
--spinup_days to 0, so there is no fishing and fish born then have negative birth days. At day 0 the nitrogen
+-spinup_days to 0, so there is no fishing and fish born then have negative birth days. At day 0 the nutrient
 budget, external fluxes and life-history records start from the settled state. This takes away the first
 weeks' plankton bloom and the fish die-off from the initial conditions. It does not bring fish populations
 to equilibrium, which takes years. A resumed run does not spin up again.

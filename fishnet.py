@@ -4,7 +4,7 @@
 Fish are tagged super-individuals inside IBM cells and stage-structured biomass (carrying
 four moments of every heritable trait) everywhere else. Both representations feed, respire,
 excrete, die and reproduce through the same equations and couple two-way to an NPZD ocean
-driven by prescribed physics. Nitrogen is conserved to round-off.
+driven by prescribed physics.
 
     python fishnet.py namelist.toml              # one run
     python fishnet.py namelist.toml --resume     # continue it from its newest restart file (or --resume FILE)
@@ -1024,7 +1024,7 @@ def woa_field(path, g, var="o_an", scale=1.025):
 
 
 class NPZD:
-    """Nitrogen-based NPZD (mmol N m-3) as C[0:5] = N, P, Z, K, D, C[5] = O2 on the (nz, ny, nx) grid."""
+    """Nutrient-based NPZD (mmol N m-3) as C[0:5] = N, P, Z, K, D, C[5] = O2 on the (nz, ny, nx) grid."""
 
     def __init__(p, c, g):
         p.c, p.g = c, g
