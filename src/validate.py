@@ -433,6 +433,97 @@ def test_aggregation(cfg):
     check("disaggregated trait mean/var exact", err < 1e-9, f"max |error| {err:.1e} over {min(200, len(np.unique(key)))} classes")
 
 
+def test_individuals(cfg):
+    """Species with `individual = true` (whales) are agents everywhere and never become biomass."""
+    import tomllib
+    c = small(cfg, days=30, hybrid__individual_agents=60)
+    spec = tomllib.loads((Path(fn.__file__).resolve().parent.parent / "species" / "humpback_whale.toml").read_text())
+    c["species"].append(fn.expand_sectors({**spec, "biomass": 0.05, "fishing_F": 0.0}))
+    m = fn.Model(c)
+    q = m.sp.names.index("humpback_whale")
+    w = m.ag.sp == q
+    j, i, _ = m.cols()
+    start = w.sum() > 0 and not m.EN[q].any() and np.allclose(m.ag.n[w], m.n_unit[q])
+    outside = int((~m.ibm[j[w], i[w]]).sum())
+    var = m.ag.A[w, fn.T_OPT].var()
+    m.run()
+    w = m.ag.sp == q
+    merged = sum(int(((r["sp"] == q) & (r["cause"] == fn.CAUSES.index("merged"))).sum()) for r in m.obits)
+    d = m.diagnostics()
+    check("whales stay individuals", start and outside > 0 and not m.EN[q].any() and merged == 0 and var > 0
+          and np.all(m.ag.n[w] == np.round(m.ag.n[w])) and abs(d["budget_error"]) < 1e-12,
+          f"{w.sum()} agents of {m.n_unit[q]:g} whales, {outside} start outside IBM cells, none merged into biomass, "
+          f"Var(A T_opt) {var:.2f}, N budget {d['budget_error']:+.1e} after 30 d")
+
+
+def test_processes(cfg):
+    """Larval progress bins, promotion at size, the benthos pool, the plankton refuge, iron limitation and
+    upwelling diagnosed from the forcing's divergence."""
+    # progress bins: fresh larvae in bin 0 cannot leave before K steps, whatever their growth rate
+    NB = np.zeros((1, 3, 1, 1)); N = np.full((1, 1, 1), 100.0)
+    out = [fn.Model.advance_bins(NB, N, np.full((1, 1, 1), 0.9))[1].item()]
+    NB = fn.Model.advance_bins(NB, N, np.full((1, 1, 1), 0.9))[0]
+    for _ in range(2):
+        NB, f = fn.Model.advance_bins(NB, N, np.full((1, 1, 1), 0.9))
+        out.append(f.item())
+    one = fn.Model.advance_bins(np.zeros((1, 1, 1, 1)), N, np.full((1, 1, 1), 0.9))[1].item()
+    check("larval progress bins", out[0] == 0 and out[1] == 0 and out[2] > 0 and one == 0.9,
+          f"share maturing in steps 1-3 with 3 bins: {', '.join(f'{x:.2f}' for x in out)} (one bin: {one:.2f})")
+    # promotion at size: juveniles that mature take more than the class mean, mass is conserved
+    m = fn.Model(small(cfg, days=1, hybrid__larva_bins=3))
+    m.step()
+    S = m.sp
+    W0 = (m.EB - m.ER) / np.maximum(m.EN, 1e-300)
+    Wm = S.weight(m.zbar()[:, fn.JUV, fn.L_MAT])
+    gpos = np.zeros_like(m.EN)
+    gpos[:, fn.JUV] = 0.05 * Wm
+    before = (m.EB.sum(), m.EN.sum())
+    EN0, EB0, ER0 = m.EN[:, fn.ADULT].copy(), m.EB[:, fn.ADULT].copy(), m.ER[:, fn.ADULT].copy()
+    m.promote_euler(gpos)
+    dN = m.EN[:, fn.ADULT] - EN0
+    moved = dN > 1
+    Wp = ((m.EB[:, fn.ADULT] - EB0) - (m.ER[:, fn.ADULT] - ER0))[moved] / dN[moved]
+    ok = np.isclose(m.EB.sum(), before[0], rtol=1e-12) and np.isclose(m.EN.sum(), before[1], rtol=1e-12) \
+        and (Wp >= W0[:, fn.JUV][moved] * (1 - 1e-9)).all() and (Wp <= Wm[moved] * (1 + 1e-9)).all()
+    check("maturing fish leave at size", ok and moved.any(),
+          f"new adults weigh {np.median(Wp / W0[:, fn.JUV][moved]):.2f}x the juvenile class mean (median), "
+          f"never above W_mat; mass and numbers conserved")
+    # benthos pool + refuge + iron: budget closes and the benthos is fed and eaten
+    c = small(cfg, days=30, npzd__detritus_food="benthos", npzd__fish_refuge=0.05, hybrid__larva_bins=3)
+    m = fn.Model(c)
+    raw = (m.npzd.C[1:fn.N_PLANK] * m.g.vol / fn.RHO_N).sum()
+    seen = m.prey_plankton()[:fn.N_PLANK - 1].sum()
+    m.run()
+    d = m.diagnostics()
+    loss = m.loss.sum()
+    check("benthos pool and plankton refuge", abs(d["budget_error"]) < 1e-12 and d["benthos"] > 0 and seen < raw
+          and m.npzd.B.min() >= 0, f"benthos {d['benthos'] / m.g.area[m.g.mask].sum():.2f} g m-2 after 30 d, plankton "
+          f"seen by fish {seen / raw:.0%} of the standing stock, N budget {d['budget_error']:+.1e}")
+    gc = {"lon": [-180.0, 180.0], "lat": [-80.0, 80.0], "nx": 72, "ny": 32, "depth_edges": [0, 100, 1000]}
+    g = fn.Grid(gc)
+    g.set_mask(np.ones((g.ny, g.nx), bool))
+    fe = fn.iron_limitation({"iron_limitation": "hnlc", "iron_factor": 0.5}, g)
+    at = lambda lo, la: fe[np.argmin(abs(g.lat - la)), np.argmin(abs(g.lon - lo))]
+    check("iron limitation (HNLC mask)", at(0, -60) < 0.55 and at(-160, 50) < 0.6 and at(-120, 0) < 0.6
+          and at(-30, 30) > 0.99 and at(70, 10) > 0.99,
+          f"growth x {at(0, -60):.2f} Southern Ocean, {at(-160, 50):.2f} subarctic Pacific, {at(-120, 0):.2f} "
+          f"equatorial Pacific, {at(-30, 30):.2f} subtropical Atlantic")
+    # upwelling: a surface layer diverging at rate a must be fed from below at w = a * dz
+    m = fn.Model(small(cfg, days=1, ocean__upwell_depth=float(m.g.z_e[1]), ocean__upwell_smooth=0))
+    o, g = m.ocean, m.g
+    a = 1e-6
+    x = np.cumsum(np.r_[0, g.dx[:, 0].mean() * np.ones(g.nx)])
+    U = np.zeros((g.nz, g.ny, g.nx + 1)); V = np.zeros((g.nz, g.ny + 1, g.nx))
+    U[0] = a * x[None, :] * g.dy
+    w = o.vertical_velocity(U, V)[0]
+    inner = g.mask & np.roll(g.mask, 1, 1) & np.roll(g.mask, -1, 1) & (g.depth > g.z_e[1])
+    inner[:, [0, -1]] = False
+    want = a * g.dz[0] * 86400 * g.dx[:, 0].mean() / g.dx     # the ramp is in mean-dx steps; cells narrow poleward
+    err = np.abs(w[inner] / want[inner] - 1).max() if inner.any() else np.inf
+    check("upwelling from forcing divergence", err < 0.05, f"w = {np.median(w[inner]):.2f} m/d where a surface layer "
+          f"diverging at {a:g} /s needs {np.median(want[inner]):.2f} (max rel. error {err:.1e})")
+
+
 def test_generations(cfg):
     m = fn.Model(small(cfg, days=1))
     for X in (m.EN, m.EB, m.ER, m.EG, m.ES, m.EGEN):          # only the agents' fish in the biomass classes
@@ -485,7 +576,7 @@ def test_initial_state(cfg):
     names = [s["name"] for s in c["species"]]
     if lit.exists():
         table = __import__("tomllib").loads(lit.read_text())
-        gl = fn.find_file("global_species.toml")                 # the table is for the global species list
+        gl = fn.find_file("global.toml")                         # the table is for the global species list
         c2 = fn.load_config(gl) if gl.exists() else copy.deepcopy(c)
         fn.literature_biomass(c2, verbose=0)
         hit = [s for s in c2["species"] if s["name"] in table]
@@ -706,6 +797,7 @@ def main():
     print("fishNET validation")
     for name, fn_ in (("conservation", lambda: test_budget(cfg)), ("transport", lambda: test_transport(cfg)),
                       ("genetics", test_genetics), ("aggregation", lambda: test_aggregation(cfg)),
+                      ("individuals", lambda: test_individuals(cfg)), ("processes", lambda: test_processes(cfg)),
                       ("generations", lambda: test_generations(cfg)), ("spin-up", lambda: test_spinup(cfg)),
                       ("warm start", lambda: test_warm_start(cfg)), ("initial state", lambda: test_initial_state(cfg)),
                       ("realism options", lambda: test_realism_options(cfg)), ("fishing map", lambda: test_fishing_map(cfg)),

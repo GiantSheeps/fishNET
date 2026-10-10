@@ -123,7 +123,8 @@ button.ghost { background: transparent; border-color: transparent; font-size: 16
 details { margin-bottom: 8px; }
 summary { cursor: pointer; color: var(--text-secondary); font-size: 11.5px; padding: 3px 0; }
 .species-list { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
-.species-row { display: grid; grid-template-columns: 1fr 64px 64px; gap: 6px; align-items: center; font-size: 11.5px; }
+.species-row { display: grid; grid-template-columns: 1fr 76px 64px; gap: 6px; align-items: center; font-size: 11.5px; }
+.species-row .glyph, .sn-row .glyph { margin-right: 5px; }
 .species-row .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 .species-row .hd { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; }
 
@@ -170,7 +171,8 @@ summary { cursor: pointer; color: var(--text-secondary); font-size: 11.5px; padd
 .legend .bar { height: 8px; width: 150px; border-radius: 2px; margin: 3px 0; }
 .legend .ends { display: flex; justify-content: space-between; color: var(--muted); font-variant-numeric: tabular-nums; }
 .splegend { position: absolute; right: 10px; top: 8px; background: color-mix(in srgb, var(--surface-1) 88%, transparent);
-  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 10.5px; display: flex; flex-direction: column; gap: 3px; }
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 10.5px; display: flex; flex-direction: column; gap: 3px;
+  max-height: calc(100% - 16px); overflow-y: auto; }                    /* 39 species must stay on the map */
 .splegend .row { display: flex; align-items: center; gap: 6px; }
 .splegend .dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--surface-1); }
 
@@ -259,3 +261,9 @@ button.mini { font-size: 11px; padding: 2px 8px; border-radius: 5px; cursor: poi
 .row3cards { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
 #valStatus .live-dot { color: var(--good); font-weight: 600; }
 #valStatus .warn { color: var(--warning); }
+
+/* composite-encoded series (9th and later): a short dashed line sample stands in for the dot */
+.glyph, .chart svg.glyph { flex: none; display: inline-block; vertical-align: middle; width: 16px; height: 8px; overflow: visible; }
+.splegend .glyph, .sp-filter .glyph { margin-right: 1px; }
+.tag { font-size: 9.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 0 3px;
+       margin-left: 4px; line-height: 13px; }

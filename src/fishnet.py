@@ -265,6 +265,7 @@ class Species:
         sp.plankton_L_max = np.array([float(s.get("plankton_L_max", np.inf)) for s in specs])
         # adult crowding (g m-2 of same-species adults in a column at which adult natural mortality doubles)
         sp.K_adult = np.array([float(s.get("K_adult", np.inf)) for s in specs])
+        sp.flags(specs)
         sp.spawn_doy = np.array([s["spawn_doy"] for s in specs], float)
         sp.grounds = [np.array(s.get("spawning_grounds", []), float).reshape(-1, 2) for s in specs]
         tr = np.array([[s["traits"].get(t, TRAIT_DEFAULT[t]) if t in TRAIT_DEFAULT else s["traits"][t]
@@ -299,12 +300,31 @@ class Species:
             if can_w > 0:
                 sp.taxo[i, JUV:, N_PLANK + 4 * i + EGG] = np.maximum(sp.taxo[i, JUV:, N_PLANK + 4 * i + EGG], can_w)
         sp.taxo[:, EGG] = 0
+        # a live-bearer's "egg" stage is a fetus or a newborn at its mother's side: nothing eats it as plankton
+        sp.taxo[..., N_PLANK + 4 * np.nonzero(sp.live_bearing)[0] + EGG] = 0
         Legg, Lmat = sp.length(sp.mu[:, EGG_M]), sp.mu[:, L_MAT]
         sp.Lref = np.stack([Legg, (Legg + sp.L_juv) / 2, (sp.L_juv + Lmat) / 2, (Lmat + sp.L_inf) / 2], 1)
         sp.PREF = sp.taxo * sp.size_window(np.r_[PLANKTON_L, sp.Lref.ravel()][None, None] / sp.Lref[..., None],
                                            np.arange(sp.n)[:, None, None])
         sp.PREF[..., :N_PLANK - 1] *= sp.plankton_taper(sp.Lref, np.arange(sp.n)[:, None])[..., None]
         sp.RISK = sp.PREF.reshape(4 * sp.n, sp.ntype)[:, N_PLANK:].T   # [prey class, predator class]
+
+    def flags(sp, specs=None):
+        """Per-species switches, all off by default (also fills them in on a restart written before they existed).
+        individual:     always a tagged agent, never a biomass class, anywhere in the domain (whales; see
+                        Model.individualise). `agents` caps the agents it starts with (0 = hybrid.individual_agents),
+                        which sets how many animals each agent stands for; 1 when the population fits.
+        mate_block_deg: a ripe female looks for a mate within this lat/lon block rather than her own grid cell
+                        (0 = her cell), for sparse, wide-ranging species.
+        air_breathing:  lungs, not gills: no metabolic-index limit on activity and no hypoxia mortality.
+        endotherm:      body temperature held constant: no Q10 on intake or respiration.
+        live_bearing:   the egg stage is a fetus or newborn at its mother's side, not plankton: nothing eats it."""
+        get = lambda k, d, t: np.array([t(s.get(k, d)) for s in specs]) if specs is not None else np.full(sp.n, t(d))
+        for name, key, d, t in (("individual", "individual", False, bool), ("n_agents", "agents", 0, float),
+                                ("mate_block", "mate_block_deg", 0, float), ("air", "air_breathing", False, bool),
+                                ("endotherm", "endotherm", False, bool), ("live_bearing", "live_bearing", False, bool)):
+            if specs is not None or not hasattr(sp, name):
+                setattr(sp, name, get(key, d, t))
 
     def plankton_taper(sp, L, s):
         """1 for small fish, falling to 0 around plankton_L_max: big fish do not live on copepods."""
@@ -851,6 +871,7 @@ class Ocean:
             uc = 0.5 * (U[..., 1:] + U[..., :-1]) / g.dy                  # face transports -> cell velocities
             vc = 0.5 * (V[:, 1:] / g.lx[1:, None] + V[:, :-1] / g.lx[:-1, None])
             psi3d = np.stack([o.streamfunction(uc[k], vc[k]) for k in range(g.nz)])
+            w_up, Wraw, wf = o.vertical_velocity(U, V)
             upwell = np.zeros((g.ny, g.nx))
         else:
             seas = np.sin(2 * np.pi * (doy - 135) / 365)
@@ -875,6 +896,11 @@ class Ocean:
                 T = T + hw["amplitude"] * ramp * np.exp(-(d / hw["radius_km"]) ** 2) * np.exp(-z / 100)
         grad = np.maximum(T[:-1] - T[1:], 0) / np.diff(g.z)[:, None, None]
         Kz = c.get("kz_bg", 1e-5) + c.get("kz_ml", 0.02) * np.exp(-grad / c.get("kz_grad", 0.005))
+        if c["source"] == "netcdf" and c.get("upwelling_from_w", True):
+            # Upwelling as a conservative exchange: water rising at w through an interface is swapped with the
+            # same volume above it (the horizontal transports cannot carry the divergence away), which moves
+            # tracers across at rate w, i.e. an extra diffusivity w x (distance between the cell centres).
+            Kz = Kz + np.maximum(wf[1:-1], 0) * np.diff(g.z)[:, None, None]
         Psi = psi3d * g.tcorner                                   # m3/s: zero wherever a corner cell is dry
         Qx, Qy = -(Psi[:, 1:] - Psi[:, :-1]), Psi[:, :, 1:] - Psi[:, :, :-1]   # non-divergent by construction
         U, V = Qx / np.maximum(g.tx, 1e-9), Qy / np.maximum(g.ty, 1e-9)        # m2/s per unit depth
@@ -883,7 +909,37 @@ class Ocean:
         Qw[1:] = np.cumsum(divH, axis=0)
         Wface = Qw / np.maximum(g.area, 1e-9)
         W = 0.5 * (Wface[:-1] + Wface[1:]) * g.wet
-        return dict(T=T, U=U, V=V, W=W, Qx=Qx, Qy=Qy, Kz=Kz, par=o.par(t, dt), doy=doy, upwell=upwell)
+        out = dict(T=T, U=U, V=V, W=W, Qx=Qx, Qy=Qy, Kz=Kz, par=o.par(t, dt), doy=doy, upwell=upwell)
+        if c["source"] == "netcdf":                    # the transports above are non-divergent, so W from them is
+            out.update(W=Wraw, w_up=w_up)             # ~0; the forcing's own divergence gives the real one
+        return out
+
+    def vertical_velocity(o, U, V):
+        """Vertical velocity from the divergence of the forcing currents, before they are projected onto a
+        non-divergent streamfunction (which removes exactly this part). With a rigid lid, what flows out of the
+        levels above an interface comes up through it: w(z) = int_0^z div_H(u) dz'. Returns the upwelling rate
+        through ocean.upwell_depth (m/d, >= 0, smoothed `upwell_smooth` times over neighbouring columns, since
+        divergence at grid scale is noisy), w at cell centres (m/s, positive up) for output, and the smoothed w at
+        every interface (nz + 1, m/s)."""
+        g, c = o.g, o.c
+        Qx, Qy = U * g.tx, V * g.ty                             # m3/s through the open part of each face
+        div = (Qx[..., 1:] - Qx[..., :-1]) + (Qy[:, 1:] - Qy[:, :-1])
+        wf = np.concatenate([np.zeros((1, g.ny, g.nx)), np.cumsum(div, 0)]) / g.area
+        live = (g.depth[None] > g.z_e[:, None, None]) * g.mask                 # interfaces with water below
+        wf = wf * live                                                          # no flow through or below the bed
+
+        def shift(x, d, ax):                                                    # neighbour, zero past a closed edge
+            y = np.roll(x, d, ax)
+            if ax == 1 or not g.periodic:
+                edge = [slice(None)] * 3
+                edge[ax] = 0 if d > 0 else -1
+                y[tuple(edge)] = 0
+            return y
+        sh = ((1, 1), (1, -1), (2, 1), (2, -1))
+        for _ in range(int(c.get("upwell_smooth", 1))):                        # average with wet neighbours
+            wf = (wf + sum(shift(wf, d, ax) for ax, d in sh)) / (1 + sum(shift(live, d, ax) for ax, d in sh)) * live
+        k = int(np.argmin(np.abs(g.z_e[1:] - c.get("upwell_depth", 100.0)))) + 1
+        return np.maximum(wf[k], 0) * 86400, 0.5 * (wf[:-1] + wf[1:]) * g.wet, wf
 
     def shallow(o, t, doy, sst, upwell, mld, z):
         """Temperature, currents and nutrient upwelling from the stacked shallow-water ocean."""
@@ -1023,6 +1079,28 @@ def woa_field(path, g, var="o_an", scale=1.025):
     return out * scale
 
 
+def iron_limitation(c, g):
+    """Multiplier on phytoplankton growth (ny, nx) standing in for iron, which the NPZD does not carry.
+    npzd.iron_limitation = "hnlc" lowers growth to npzd.iron_factor (default 0.5) in the three high-nutrient,
+    low-chlorophyll regions: the Southern Ocean south of ~45 S, the subarctic North Pacific (40-62 N, 145 E to
+    125 W) and the eastern equatorial Pacific (within ~10 degrees of the equator, 160 E to 85 W). Edges are
+    smoothed over iron_edge_deg (default 4), and water shallower than iron_shelf_m (default 500 m) keeps full
+    growth, as shelves get iron from their sediments. "none" (the default) returns 1 everywhere."""
+    if str(c.get("iron_limitation", "none")).lower() != "hnlc":
+        return np.ones((g.ny, g.nx))
+    e = float(c.get("iron_edge_deg", 4.0))
+    sig = lambda x: 1 / (1 + np.exp(-np.clip(x / e, -50, 50)))
+    lon = ((g.lon[None, :] + 180) % 360) - 180 + 0 * g.lat[:, None]
+    lat = g.lat[:, None] + 0 * lon
+    east = (lon + 360) % 360                                     # 0..360 so the Pacific is one interval
+    south = sig(-45 - lat)
+    subarctic = sig(lat - 40) * sig(62 - lat) * sig(east - 145) * sig(235 - east)
+    equatorial = sig(10 - np.abs(lat)) * sig(east - 160) * sig(275 - east)
+    w = np.maximum.reduce([south, subarctic, equatorial])
+    w = w * (np.asarray(g.depth) > float(c.get("iron_shelf_m", 500.0))) if hasattr(g, "depth") else w
+    return 1 - (1 - float(c.get("iron_factor", 0.5))) * w
+
+
 class NPZD:
     """Nutrient-based NPZD (mmol N m-3) as C[0:5] = N, P, Z, K, D, C[5] = O2 on the (nz, ny, nx) grid."""
 
@@ -1042,6 +1120,11 @@ class NPZD:
             p.O2_ref = p.C[O2_IDX].copy()
         p.C *= g.wet
         p.h = np.diff(g.z)
+        p.fe = iron_limitation(c, g)
+        # Benthic fauna (mmol N m-2 on each column's sea bed), with npzd.detritus_food = "benthos": fed by the
+        # detritus that reaches the bed, eaten by fish, and lost (respired back to nutrients) at benthos_loss
+        p.benthic = str(c.get("detritus_food", "pool")).lower() == "benthos"
+        p.B = np.full((g.ny, g.nx), float(c.get("benthos_init", 1.0)) * RHO_N * p.benthic) * g.mask
 
     def light(p, par):
         k = p.c["kw"] + p.c["kc"] * p.C[1]
@@ -1054,7 +1137,7 @@ class NPZD:
         N, P, Z, K, D, O = p.C
         fP, fZ = 1.066 ** (T - 20), Q10 ** ((T - 20) / 10)
         hyp = np.maximum(O, 0) / (c.get("kO2_remin", 8.0) + np.maximum(O, 0))   # respiration slows as oxygen runs out
-        up = c["mu_max"] * fP * N / (c["kN"] + N) * I / np.sqrt(I ** 2 + c["Ik"] ** 2) * P
+        up = c["mu_max"] * p.fe * fP * N / (c["kN"] + N) * I / np.sqrt(I ** 2 + c["Ik"] ** 2) * P
         gr = c["g_max"] * fZ * P ** 2 / (c["kP"] ** 2 + P ** 2) * Z
         pm = c["mP"] * P
         ze, zq = c["mZ"] * fZ * Z * hyp, c["mZ2"] * Z ** 2
@@ -1120,10 +1203,28 @@ class NPZD:
             if kref < g.nz:
                 p.export_ref += (flux[kref] * g.area * g.wet[kref]).sum()   # sinking past the reference depth
             hit = flux * g.bed                                      # reaching the sea bed
+            if p.benthic:                                           # a share becomes benthic fauna
+                eat = hit * float(p.c.get("benthos_eff", 0.1))
+                p.B += eat.sum(0)
+                hit = hit - eat
             export += (hit * g.area).sum()
             if keep:
                 D += hit / g.dzx
         return 0.0 if keep else export
+
+    def benthos(p, dt):
+        """Benthic fauna losses (respiration and death, rate benthos_loss per day, plus a logistic term when
+        benthos_K g m-2 is set) go back to nutrients in the bed cell, using oxygen as fish respiration does."""
+        if not p.benthic:
+            return
+        c, g = p.c, p.g
+        rate = float(c.get("benthos_loss", 0.004))
+        K = float(c.get("benthos_K", 0.0)) * RHO_N
+        loss = p.B * np.minimum(1, rate * dt * (1 + (p.B / K if K > 0 else 0)))
+        p.B -= loss
+        dN = g.bed * loss[None] / g.dzx
+        p.C[0] += dN
+        p.C[O2_IDX] = np.maximum(p.C[O2_IDX] - O2N * dN, 0)
 
     def restore(p, upwell, dt):
         """Deep-water and coastal-upwelling nutrient supply; returns net input (mmol)."""
@@ -1245,6 +1346,8 @@ class Model:
         # EN[:, JUV]). With one bin a fixed fraction matures each step whatever its age, so some fish mature almost at
         # once; K bins make the time to maturity Erlang(K) with the same mean.
         m.NJ = np.zeros((S.n, max(1, int(m.hy.get("juvenile_bins", 1))), g.ny, g.nx))
+        # ...and larvae `larva_bins` toward the juvenile length, so a hatchling cannot become a juvenile on day one
+        m.NL = np.zeros((S.n, max(1, int(m.hy.get("larva_bins", 1))), g.ny, g.nx))
         m.Fv = m.LEV / np.maximum(m.LEV.sum(2, keepdims=True), 1e-300)
         m.ibm, m.bref = np.zeros((g.ny, g.nx), bool), np.full(S.n, np.nan)
         m.t, m.step_i, m.ext, m.o2_ext, m.obits = 0.0, 0, 0.0, 0.0, []
@@ -1254,6 +1357,8 @@ class Model:
         m.init_fish()
         if r.get("warm_start"):
             m.warm_start(r["warm_start"], r.get("warm_start_plankton", True))
+        m.n_unit = np.ones(S.n)                  # animals per agent of each individual species (set next)
+        m.individualise()
         m.force()
         m.fields()
         m.vertical()
@@ -1379,6 +1484,11 @@ class Model:
             m.NJ[new] = old["NJ"][got]
         else:
             m.NJ[new] = m.EN[new, JUV, None] / K
+        KL = m.NL.shape[1]
+        if "NL" in old and old["NL"].shape[1] == KL:
+            m.NL[new] = old["NL"][got]
+        else:
+            m.NL[new] = m.EN[new, LARVA, None] / KL
         m.bref[new] = old["bref"][got]
         a0 = old["ag"]
         remap = np.full(len(names), -1)
@@ -1397,6 +1507,8 @@ class Model:
         if plankton:                                        # with O2_init = "woa" the atlas oxygen is kept
             O2 = m.npzd.C[O2_IDX].copy()
             m.npzd.C = old["npzd"].C.copy()
+            if m.npzd.benthic and getattr(old["npzd"], "benthic", False):
+                m.npzd.B = old["npzd"].B.copy()
             if woa:
                 m.npzd.C[O2_IDX] = O2
         if m.verbose:
@@ -1466,7 +1578,7 @@ class Model:
         return m.EB.sum() + m.EG.sum() + (a.n * (a.W + a.E + a.G)).sum()
 
     def total_N(m):
-        return (m.npzd.C[:N_NUTR] * m.g.vol).sum() + RHO_N * m.fish_mass()
+        return (m.npzd.C[:N_NUTR] * m.g.vol).sum() + (m.npzd.B * m.g.area).sum() + RHO_N * m.fish_mass()
 
     def zbar(m):
         S = m.sp
@@ -1585,6 +1697,28 @@ class Model:
                                             m.risk[s, st, k, j, i], m.crowd[s, k, j, i],
                                             m.lightf[k, j, i] * vertical, home, m.shelf[j, i]), -1)
 
+    def prey_plankton(m):
+        """Plankton and benthic food per cell (N_PLANK, nz, ny, nx), g wet mass, as fish see and eat it. The fourth
+        type follows npzd.detritus_food: "pool" (all detritus), "bed" (detritus in sea-bed cells), "bed_flux"
+        (only what sinks onto the bed this step) or "benthos" (the benthic fauna pool, on the bed). With
+        npzd.fish_refuge > 0 (mmol N m-3) phyto-, zoo- and krill are only partly available, C / (C + fish_refuge),
+        so intake falls with the square of a thin plankton field (Holling type III): fish stop chasing plankton
+        that is nearly gone and it keeps a refuge, instead of being grazed to nothing."""
+        p, g = m.npzd, m.g
+        X = p.C[1:1 + N_PLANK] * g.vol / RHO_N
+        food = str(p.c.get("detritus_food", "pool")).lower()
+        if food == "bed_flux":
+            X[3] = np.where(g.bed, np.minimum(X[3], p.C[4] * p.c["w_sink"] * m.dt * g.area / RHO_N), 0.0)
+        elif food == "bed":
+            X[3] = X[3] * g.bed
+        elif food == "benthos":
+            X[3] = g.bed * (p.B * g.area / RHO_N)[None]
+        K3 = float(p.c.get("fish_refuge", 0.0))
+        if K3 > 0:
+            Cp = np.maximum(p.C[1:N_PLANK], 0)
+            X[:N_PLANK - 1] *= Cp / (Cp + K3)
+        return X
+
     def fields(m):
         """Food, risk and crowding fields seen by each species/stage (from the current fish+plankton state)."""
         S, g, a = m.sp, m.g, m.ag
@@ -1595,7 +1729,7 @@ class Model:
             j, i, cell = m.cols()
             fish = fish + np.bincount((a.sp * 4 + a.st) * g.nc3 + cell, a.n * (a.W + a.E + a.G),
                                       nf * g.nc3).reshape(fish.shape)
-        dens = np.concatenate([m.npzd.C[1:1+N_PLANK] / RHO_N, fish / g.volx])
+        dens = np.concatenate([m.prey_plankton() / g.volx, fish / g.volx])
         K = S.K_food[:, None, None, None, None]
         A = np.einsum("xt,tkji->xkji", S.PREF.reshape(nf, -1), dens).reshape(shp)
         r = np.einsum("xq,qkji->xkji", S.RISK, dens[N_PLANK:]).reshape(shp)
@@ -1666,6 +1800,7 @@ class Model:
         m.ES = m.transport(m.ES, fr, expand=2)
         m.EGEN = m.transport(m.EGEN, fr)
         m.NJ = m.transport(m.NJ, ([f[:, JUV, None] for f in fr[0]], fr[1]))
+        m.NL = m.transport(m.NL, ([f[:, LARVA, None] for f in fr[0]], fr[1]))
         m.EG = m.transport(m.EG, ([fi[:, ADULT] for fi in fr[0]], fr[1]))
 
     def move_agents(m):
@@ -1728,6 +1863,51 @@ class Model:
         a.lon, a.lat = np.where(ok, lon, a.lon), np.where(ok, lat, a.lat)
 
     # ------------------------------------------------ aggregation / disaggregation
+    def individualise(m):
+        """Turn all biomass of `individual` species (whales) into agents, wherever it is: inside IBM cells or not.
+        From then on they stay agents: sync never merges them, they swim through biomass and IBM cells alike, and
+        their calves are born as agents. Each agent stands for n_unit animals, the population divided by the
+        species' agent cap (hybrid.individual_agents, or `agents` in the species file) and rounded up, so 1 (true
+        individuals) whenever the population fits under the cap. Counts per class are rounded stochastically, which
+        keeps the expected numbers and biomass; this runs before the nutrient budget's reference is taken."""
+        S, g, a, rng = m.sp, m.g, m.ag, m.rng
+        cap0 = m.hy.get("individual_agents", 2000)
+        for q in np.nonzero(S.individual)[0]:
+            N = m.EN[q]
+            have = a.n[a.sp == q].sum() if len(a) else 0.0           # e.g. agents carried over by a warm start
+            cap = S.n_agents[q] if S.n_agents[q] > 0 else cap0
+            m.n_unit[q] = unit = max(1.0, float(np.ceil((N.sum() + have) / cap)))
+            if N.sum() <= 0:
+                continue
+            st, j, i = np.nonzero(N > 0)
+            Nc = N[st, j, i]
+            cnt = (np.floor(Nc / unit) + (rng.random(len(Nc)) < (Nc / unit) % 1)).astype(int)
+            M, E = m.EB[q][st, j, i] / Nc, m.ER[q][st, j, i] / Nc
+            G = np.where(st == ADULT, m.EG[q][j, i] / np.maximum(N[ADULT, j, i], 1e-300), 0)
+            for c in np.unique(cnt[cnt > 0]):                # classes with c agents each share one moment draw
+                w = np.nonzero(cnt == c)[0]
+                # draw at least 8 per class so a lone agent is a random member, not the class mean
+                A = sample_moments(m.ES[q][st[w], :, :, j[w], i[w]], Nc[w], max(c, 8), rng)[:, :c]
+                A = A.reshape(-1, len(TRAITS))
+                r = np.repeat(w, c)
+                sr, s_, u = np.full(len(r), q), st[r], rng.random(len(r))
+                age = np.select([s_ == EGG, s_ == LARVA, s_ == JUV],
+                                [0 * u, S.egg_days[q] * (1 + 5 * u), 30 + 300 * u], S.lifespan_days[q] * (0.15 + 0.35 * u))
+                gm = (m.EGEN[q][st, j, i] / Nc)[r]
+                lon = g.lon_e[i[r]] + rng.random(len(r)) * g.dlon
+                lat = g.lat_e[j[r]] + rng.random(len(r)) * g.dlat
+                a.add(sp=sr, st=s_, sex=rng.integers(0, 2, len(r)), k=m.choose(m.Fv[q, s_, :, j[r], i[r]]),
+                      n=np.full(len(r), unit), W=(M - E)[r], E=E[r], G=G[r], age=age, amax=np.maximum(S.lifespan_days[q] * np.exp(
+                          0.15 * rng.standard_normal(len(r))), age + 30), tb=m.t - age, lon=lon, lat=lat, lon0=lon,
+                      lat0=lat, origin=1, mother=-1, father=-1, gen=np.round(gm), **m.newborn_genes(A, sr, c))
+            for X in (m.EN, m.EB, m.ER, m.EGEN, m.EG, m.ES, m.NJ, m.NL):
+                X[q] = 0
+            if np.isnan(m.bref[q]):
+                m.bref[q] = unit * S.W_inf[q]
+            if m.verbose:
+                print(f"  {S.names[q]}: always individuals, {(a.sp == q).sum():,d} agents of {unit:g} "
+                      f"animal{'s' * (unit > 1)} each", flush=True)
+
     def to_euler(m, s, st, j, i, n, M, G, A, E, gen=0):
         """Add fish (n per row; soma+reserve M, reserve E and gonad G per fish; standardised breeding values A;
         generation gen)."""
@@ -1742,6 +1922,13 @@ class Model:
             W = np.broadcast_to(M - E, np.shape(n))[juv]
             b = np.clip(((W - Wj) / np.maximum(Wm - Wj, 1e-12) * K).astype(int), 0, K - 1)
             np.add.at(m.NJ, (s[juv], b, j[juv], i[juv]), np.broadcast_to(n, np.shape(st))[juv])
+        lar = st == LARVA
+        if lar.any():                                          # larvae likewise, by progress toward L_juv
+            S, K = m.sp, m.NL.shape[1]
+            We, Wj = S.mu[s[lar], EGG_M] * (1 - YOLK), S.weight(S.L_juv[s[lar]], s[lar])
+            W = np.broadcast_to(M - E, np.shape(n))[lar]
+            b = np.clip(((W - We) / np.maximum(Wj - We, 1e-12) * K).astype(int), 0, K - 1)
+            np.add.at(m.NL, (s[lar], b, j[lar], i[lar]), np.broadcast_to(n, np.shape(st))[lar])
         m.EB += np.bincount(idx, n * M, m.EN.size).reshape(sh)
         m.ER += np.bincount(idx, n * E, m.EN.size).reshape(sh)
         m.EG += np.bincount(np.ravel_multi_index((s, j, i), m.EG.shape), n * G, m.EG.size).reshape(m.EG.shape)
@@ -1774,13 +1961,18 @@ class Model:
                         a.gen[mask])
             m.remove(mask, CAUSES.index("merged"))
 
+    def hybrid_agents(m):
+        """Agents counted against hybrid.max_agents: all but those of `individual` species."""
+        return int((~m.sp.individual[m.ag.sp]).sum()) if len(m.ag) else 0
+
     def sync(m):
-        """Agents outside IBM cells or depleted below the minimum super-individual size become biomass."""
+        """Agents outside IBM cells or depleted below the minimum super-individual size become biomass, except
+        those of `individual` species, which stay agents wherever they go."""
         a = m.ag
         if len(a):
             j, i, _ = m.cols()
             small = a.n * (a.W + a.E + a.G) < np.nan_to_num(m.hy.get("min_agent_frac", 1e-4) * m.bref[a.sp], nan=-1)
-            m.merge(~m.ibm[j, i] | small)
+            m.merge((~m.ibm[j, i] | small) & ~m.sp.individual[a.sp])
 
     def disaggregate(m, colmask):
         S, g, a, rng = m.sp, m.g, m.ag, m.rng
@@ -1791,14 +1983,17 @@ class Model:
         G = np.where(st == ADULT, m.EG[s, j, i] / np.maximum(m.EN[s, ADULT, j, i], 1e-300), 0)
         ne = np.floor(N / k)
         ok = ~(ne * (M + G) < m.hy.get("min_agent_frac", 1e-4) * m.bref[s] * 3)
-        room = max(0, m.hy.get("max_agents", 10 ** 5) - len(a)) // k
-        
+        ind = m.sp.individual                                # individual species: never disaggregated, and their
+        pool = m.hy.get("max_agents", 10 ** 5)               # agents do not count against max_agents
+        room = max(0, pool - m.hybrid_agents()) // k
+        ok &= ~ind[s]
+
         if m.hy.get("budget_by_biomass", True):
             # Share the agent budget in proportion to each species' biomass, so the individuals sample where
             # the fish actually are, and fill each species' quota with its largest classes first.
             B = m.EB.sum((1, 2, 3)) + (np.bincount(a.sp, a.n * (a.W + a.E + a.G), m.sp.n) if len(a) else 0)
-            share = np.maximum(B / max(B.sum(), 1e-300), m.hy.get("min_species_share", 0.05))
-            cap = share / share.sum() * m.hy.get("max_agents", 10 ** 5) / k
+            share = np.maximum(B / max(B.sum(), 1e-300), m.hy.get("min_species_share", 0.05)) * ~ind
+            cap = share / max(share.sum(), 1e-300) * pool / k
             have = np.bincount(a.sp, minlength=m.sp.n) / k if len(a) else np.zeros(m.sp.n)
             big = np.argsort(-ne * (M + G))                      # biggest classes first
             rank = np.zeros(len(s))
@@ -1818,6 +2013,8 @@ class Model:
         m.EGEN[s, st, j, i] -= ne * k * gm
         juv = st == JUV
         m.NJ[s[juv], :, j[juv], i[juv]] *= (1 - (ne * k / N)[juv])[:, None]
+        lar = st == LARVA
+        m.NL[s[lar], :, j[lar], i[lar]] *= (1 - (ne * k / N)[lar])[:, None]
         m.EN[s, st, j, i] -= ne * k
         m.EB[s, st, j, i] -= ne * k * M
         m.ER[s, st, j, i] -= ne * k * E
@@ -1902,22 +2099,16 @@ class Model:
         s, st, n, M, G, Z, cell, na, nt = u["s"], u["st"], u["n"], u["M"], u["G"], u["Z"], u["cell"], u["na"], S.ntype
         T = m.f["T"].ravel()[cell]
         phi = np.exp(-0.5 * ((T - Z[:, T_OPT]) / Z[:, T_WID]) ** 2)
-        fQ = Q10 ** ((T - S.T_ref[s]) / 10)
+        fQ = np.where(S.endotherm[s], 1.0, Q10 ** ((T - S.T_ref[s]) / 10))      # endotherms hold their own temperature
         mi = metabolic_index(m.npzd.C[O2_IDX].ravel()[cell], T, M, S.A_o[s], S.E_o[s], S.eps_o[s])
+        mi = np.where(S.air[s], np.maximum(S.phi_crit[s], 1.0), mi)         # air breathers: full scope, no hypoxia
         aer = np.clip((mi - 1) / np.maximum(S.phi_crit[s] - 1, 1e-6), 0, 1)      # aerobic scope for activity
         Cmax = S.cmax[s] * Z[:, METAB] * M ** (2 / 3) * fQ * phi * aer * (st > EGG)
         R = S.rmet[s] * Z[:, METAB] * M ** 0.8 * fQ * (ACTIVITY[st] + (st >= JUV) * S.c_swim[s] * (Z[:, SPEED] / S.mu[s, SPEED]) ** 2)
         ft, mass = N_PLANK + 4 * s + st, n * (M + G)
         flat, size = cell * nt + ft, g.nc3 * nt
         B = np.bincount(flat, mass, size).reshape(g.nc3, nt)
-        B[:, :N_PLANK] = (m.npzd.C[1:1+N_PLANK] * g.vol).reshape(N_PLANK, -1).T / RHO_N
-        food = m.cfg["npzd"].get("detritus_food", "pool")
-        if food == "bed_flux":
-            # detritus is the benthos proxy: only on the sea bed, and only what sinks onto it this step
-            flux = (m.npzd.C[4] * m.npzd.c["w_sink"] * dt * g.area[None]).ravel() / RHO_N    # mmol N -> g fish
-            B[:, 3] = np.where(g.bed.ravel(), np.minimum(B[:, 3], flux), 0.0)
-        elif food == "bed":                                   # the benthos proxy lives on the sea bed only
-            B[:, 3] = np.where(g.bed.ravel(), B[:, 3], 0.0)
+        B[:, :N_PLANK] = m.prey_plankton().reshape(N_PLANK, -1).T
         Lp = np.bincount(flat, mass * u["L"], size).reshape(g.nc3, nt) / np.maximum(B, 1e-300)
         Lp[:, :N_PLANK] = PLANKTON_L
         Lp[B <= 0] = 1.0
@@ -1960,7 +2151,11 @@ class Model:
         ratio[:, N_PLANK:] = np.where(lam[:, N_PLANK:] > 0, realised[:, N_PLANK:] / np.maximum(lam[:, N_PLANK:] * B[:, N_PLANK:], 1e-300), 0)
         eaten = demand * (scale * ratio)[cp]
         for q in range(N_PLANK):
-            m.npzd.C[1 + q] -= (np.bincount(cp, eaten[:, q], g.nc3) * RHO_N / g.volx.ravel()).reshape(g.nz, g.ny, g.nx)
+            got = np.bincount(cp, eaten[:, q], g.nc3).reshape(g.nz, g.ny, g.nx) * RHO_N        # mmol N per cell
+            if q == 3 and m.npzd.benthic:                                                   # benthic fauna
+                m.npzd.B -= got.sum(0) / g.area
+            else:
+                m.npzd.C[1 + q] -= got / g.volx
         intake = np.zeros(len(n))
         intake[p] = eaten.sum(1)
         ns = n - dP - dO
@@ -2033,6 +2228,7 @@ class Model:
         m.ES *= (EN / np.maximum(m.EN, 1e-300))[:, :, None, None]
         m.EGEN *= EN / np.maximum(m.EN, 1e-300)
         m.NJ *= (EN[:, JUV] / np.maximum(m.EN[:, JUV], 1e-300))[:, None]
+        m.NL *= (EN[:, LARVA] / np.maximum(m.EN[:, LARVA], 1e-300))[:, None]
         m.EN = EN
         m.EB = np.where(orphan, m.EB, np.bincount(ecc, ns * (Wn + e_live), sz).reshape(sh))
         m.ER = np.where(orphan, m.ER, np.bincount(ecc, ns * e_live, sz).reshape(sh))
@@ -2046,28 +2242,49 @@ class Model:
         m.promote_euler(gpos)
 
     # ------------------------------------------------ life history
+    @staticmethod
+    def advance_bins(NB, N, r):
+        """Move fish through progress bins NB (species, K, ny, nx) at rate r per step (K times the one-class rate,
+        so the mean time is unchanged and its spread is Erlang-K); only the last bin leaves. The bins are first
+        rescaled to sum to the class count N. Returns the new bins and the fraction of N that leaves."""
+        K = NB.shape[1]
+        tot = NB.sum(1)
+        NB = np.where((tot > 0)[:, None], NB * (N / np.maximum(tot, 1e-300))[:, None],
+                      (np.arange(K) == 0)[None, :, None, None] * N[:, None])
+        flow = NB * r[:, None]
+        out = np.clip(flow[:, -1] / np.maximum(N, 1e-300), 0, 1)
+        NB = NB - flow
+        NB[:, 1:] += flow[:, :-1]
+        return NB, out
+
     def promote_euler(m, gpos):
         S, Zb = m.sp, m.zbar()
         W = (m.EB - m.ER) / np.maximum(m.EN, 1e-300)
         Wj, Wm = S.weight(S.L_juv)[:, None, None], S.weight(Zb[:, JUV, L_MAT])
         We = (S.mu[:, EGG_M] * (1 - YOLK))[:, None, None]
-        esc = lambda st, lo, hi: np.where(W[:, st] >= hi, 1, np.clip(gpos[:, st] / np.maximum(hi - lo, 1e-12), 0, 1))
+        rate = lambda st, lo, hi, K: np.where(W[:, st] >= hi, 1, np.clip(K * gpos[:, st] / np.maximum(hi - lo, 1e-12), 0, 1))
         dur = S.egg_days[:, None, None] * Q10 ** (-(m.Tclass[:, EGG] - S.T_ref[:, None, None]) / 10)
-        # juveniles: advance through the progress bins at K times the one-class rate; only the last bin matures
-        K = m.NJ.shape[1]
-        tot = m.NJ.sum(1)                                     # keep the bins summing to the juvenile count
-        m.NJ = np.where((tot > 0)[:, None], m.NJ * (m.EN[:, JUV] / np.maximum(tot, 1e-300))[:, None],
-                        (np.arange(K) == 0)[None, :, None, None] * m.EN[:, JUV, None])
-        r = np.where(W[:, JUV] >= Wm, 1, np.clip(K * gpos[:, JUV] / np.maximum(Wm - Wj, 1e-12), 0, 1))[:, None]
-        flow = m.NJ * r
-        fj = np.clip(flow[:, -1] / np.maximum(m.EN[:, JUV], 1e-300), 0, 1)
-        m.NJ -= flow
-        m.NJ[:, 1:] += flow[:, :-1]
-        fl = esc(LARVA, We, Wj)
+        # larvae and juveniles advance through their progress bins; only the last bin moves on to the next stage
+        m.NJ, fj = m.advance_bins(m.NJ, m.EN[:, JUV], rate(JUV, Wj, Wm, m.NJ.shape[1]))
+        m.NL, fl = m.advance_bins(m.NL, m.EN[:, LARVA], rate(LARVA, We, Wj, m.NL.shape[1]))
+        fe = np.minimum(1, m.dt / dur)
         m.NJ[:, 0] += m.EN[:, LARVA] * fl                     # new juveniles start at the first bin
-        for st, f in ((JUV, fj), (LARVA, fl), (EGG, np.minimum(1, m.dt / dur))):
-            for X, ex in ((m.EN, 0), (m.EB, 0), (m.ER, 0), (m.ES, 2), (m.EGEN, 0)):
-                d = X[:, st] * f.reshape(f.shape[:1] + (1,) * ex + f.shape[1:])
+        m.NL[:, 0] += m.EN[:, EGG] * fe                       # ...and new larvae at theirs
+        for st, f, lo, hi in ((JUV, fj, Wj, Wm), (LARVA, fl, We, Wj), (EGG, fe, None, None)):
+            wf = np.ones_like(f)
+            if lo is not None and m.hy.get("promote_at_size", True):
+                # The fish that move on are the class's biggest, not its average: they leave at the next stage's
+                # entry size, as far as the class can pay for it while those left behind keep at least the
+                # stage's own entry size. (Class means otherwise carry stunted fish into the next stage.)
+                N, Wc = m.EN[:, st], W[:, st]
+                Np = N * f
+                with np.errstate(over="ignore"):
+                    cap = (N * Wc - (N - Np) * lo) / np.maximum(Np, 1e-300)
+                Wp = np.maximum(Wc, np.minimum(hi, cap))
+                wf = np.where((Np > 0) & (Wc > 0), Wp / np.maximum(Wc, 1e-300), 1.0)
+            for X, ex, scale in ((m.EN, 0, 1), (m.EB, 0, wf), (m.ER, 0, wf), (m.ES, 2, 1), (m.EGEN, 0, 1)):
+                ff = f * scale
+                d = X[:, st] * ff.reshape(ff.shape[:1] + (1,) * ex + ff.shape[1:])
                 X[:, st] -= d
                 X[:, st + 1] += d
 
@@ -2119,6 +2336,11 @@ class Model:
             return
         j, i, cell = m.cols()
         col = j * g.nx + i
+        blk = S.mate_block[a.sp]                           # sparse, wide-ranging species search a lat/lon block
+        if (blk > 0).any():
+            b = np.maximum(blk, 1e-9)
+            bcol = (np.floor((a.lat + 90) / b) * 4096 + np.floor((a.lon + 180) / b)).astype(np.int64) % g.ncol
+            col = np.where(blk > 0, bcol, col)
         T = m.f["T"].ravel()[cell]
         phi = np.exp(-0.5 * ((T - a.Z[:, T_OPT]) / a.Z[:, T_WID]) ** 2)
         ripe = (a.st == ADULT) & (a.G >= S.gonad_frac[a.sp] * a.W) \
@@ -2130,11 +2352,15 @@ class Model:
         fem = np.nonzero(ripe & (a.sex == 0))[0]
         males = np.nonzero((a.st == ADULT) & (a.sex == 1))[0]
         dad = m.mate(fem, males, col)
-        k = hy.get("offspring_agents", 2)
         em = a.Z[fem, EGG_M]
-        each = np.floor(a.n[fem] * a.G[fem] / em / k) * (dad >= 0)
-        ok = each >= 1
-        fem, dad, em, each = fem[ok], males[dad[ok]], em[ok], each[ok]
+        # Hybrid species: offspring_agents agents per spawning, sharing the eggs. Individual species: offspring come
+        # in agents of n_unit young (1 = one calf per agent), as many as her gonad pays for in full; the rest of the
+        # gonad stays with her until it buys the next one.
+        ind, unit = S.individual[a.sp[fem]], m.n_unit[a.sp[fem]]
+        k = np.where(ind, np.floor(a.n[fem] * a.G[fem] / (unit * em)), hy.get("offspring_agents", 2))
+        each = np.where(ind, unit, np.floor(a.n[fem] * a.G[fem] / em / np.maximum(k, 1))) * (dad >= 0)
+        ok = (each >= 1) & (k >= 1)
+        fem, dad, em, each, k = fem[ok], males[dad[ok]], em[ok], each[ok], k[ok].astype(int)
         if not len(fem):
             return
         a.G[fem] -= each * k * em / a.n[fem]
@@ -2148,12 +2374,13 @@ class Model:
             gl, A = None, inherit(a.A[f], a.A[d], S.h2[s], rng)
         n, e = each[r], em[r]
         m.eggs += np.bincount(s, n, S.n)
-        room = max(0, hy.get("max_agents", 10 ** 5) - len(a))
-        if len(r) > room:
-            x = slice(room, None)
-            m.to_euler(s[x], np.full(len(r) - room, EGG), j[f][x], i[f][x], n[x], e[x], 0 * e[x], A[x], YOLK * e[x],
+        room = max(0, hy.get("max_agents", 10 ** 5) - m.hybrid_agents())
+        over = ~S.individual[s] & (np.cumsum(~S.individual[s]) > room)     # young of individual species stay agents
+        if over.any():
+            x = over
+            m.to_euler(s[x], np.full(x.sum(), EGG), j[f][x], i[f][x], n[x], e[x], 0 * e[x], A[x], YOLK * e[x],
                        (np.maximum(a.gen[f], a.gen[d]) + 1)[x])
-        x = slice(0, room)
+        x = ~over
         f, d, s, A, n, e = f[x], d[x], s[x], A[x], n[x], e[x]
         gl = gl[x] if gl is not None else None
         if len(f):
@@ -2204,6 +2431,7 @@ class Model:
         for X in (m.EN, m.EB, m.ER, m.EGEN):
             X[tiny] = 0
         m.NJ[np.broadcast_to(tiny[:, JUV, None], m.NJ.shape)] = 0
+        m.NL[np.broadcast_to(tiny[:, LARVA, None], m.NL.shape)] = 0
         m.ES[np.broadcast_to(tiny[:, :, None, None], m.ES.shape)] = 0
         m.EG[tiny[:, ADULT]] = 0
 
@@ -2222,6 +2450,7 @@ class Model:
         p.C = m.transport3d(p.C * g.vol, f["Qx"], f["Qy"], p.c["kh"]) / g.volx
         p.vdiff(f["Kz"], m.dt_s)
         m.ext -= p.sink(m.dt)
+        p.benthos(m.dt)
         kref = int(np.searchsorted(g.z_e[1:], p.c.get("export_depth", 100.0)))
         deep = np.zeros((g.nz, 1, 1), bool)
         deep[kref + 1:] = True                                      # fish inputs already below the reference depth
@@ -2275,7 +2504,7 @@ class Model:
         tot = m.total_N()
         return dict(time=m.t, biomass=bio, numbers=num, agent_biomass=abio, agents=acnt, losses=m.loss / m.dt,
                     catch=m.catch / m.dt, eggs=m.eggs / m.dt, trait_mean=S.mu + S.sd * mean, trait_sd=S.sd * np.sqrt(var),
-                    plankton=(m.npzd.C[:N_NUTR] * g.vol).sum((1, 2, 3)), oxygen=(m.npzd.C[O2_IDX] * g.vol).sum(),
+                    plankton=(m.npzd.C[:N_NUTR] * g.vol).sum((1, 2, 3)), benthos=(m.npzd.B * g.area).sum() / RHO_N, oxygen=(m.npzd.C[O2_IDX] * g.vol).sum(),
                     o2_min=m.npzd.C[O2_IDX][g.wet].min(), o2_ext=m.o2_ext,
                     metabolic_index=m.mi_sum / np.maximum(m.mi_n, 1e-300), **m.adaptation(),
                     export_sinking=m.exp_sink / m.dt, export_fish=m.exp_fish / m.dt, export_respired=m.exp_resp / m.dt, total_N=tot, ext_N=m.ext,
@@ -2420,8 +2649,18 @@ class Model:
             sys.exit(f"--resume: {path} was written with a different run.dt_hours, run.start or [grid] than this namelist")
         m = cls.__new__(cls)
         m.__dict__.update(st["model"])
+        m.sp.flags()                                        # restarts written before the per-species switches
+        if not hasattr(m.npzd, "B"):                        # ...or before the benthos pool and iron limitation
+            m.npzd.benthic, m.npzd.B = False, np.zeros((m.g.ny, m.g.nx))
+        if not hasattr(m.npzd, "fe"):
+            m.npzd.fe = np.ones((m.g.ny, m.g.nx))
+        if "n_unit" not in m.__dict__:
+            m.n_unit = np.ones(m.sp.n)
         if "EGEN" not in m.__dict__:                        # restarts written before generations were tracked in biomass
             m.EGEN = np.zeros_like(m.EN)
+        if "NL" not in m.__dict__:                          # ...or before larval progress bins
+            KL = max(1, int(cfg["hybrid"].get("larva_bins", 1)))
+            m.NL = m.EN[:, LARVA, None] * np.ones((1, KL, 1, 1)) / KL
         if "NJ" not in m.__dict__:                          # ...or before juvenile progress bins
             m.NJ = m.EN[:, JUV, None] * np.ones((1, max(1, int(cfg["hybrid"].get("juvenile_bins", 1))), 1, 1)) \
                 / max(1, int(cfg["hybrid"].get("juvenile_bins", 1)))
@@ -2472,6 +2711,7 @@ class Output:
         var(o.F, "fish_biomass", ("time", "species", "stage", "lat", "lon"), "g m-2")
         var(o.F, "fish_numbers", ("time", "species", "stage", "lat", "lon"), "m-2")
         var(o.F, "agent_biomass", ("time", "species", "lat", "lon"), "g m-2")
+        var(o.F, "benthos", ("time", "lat", "lon"), "g m-2")
         var(o.F, "trait_mean", ("time", "species", "trait", "lat", "lon"), "breeding value")
         var(o.F, "ibm", ("time", "lat", "lon"), "", "i1")
         for k, t in (("time", "f8"), ("id", "i8"), ("species", "i2"), ("stage", "i1"), ("sex", "i1"), ("gen", "i4"),
@@ -2484,7 +2724,8 @@ class Output:
         for k, dm, u in (("biomass", S3 + ("stage",), "g"), ("numbers", S3 + ("stage",), ""), ("agent_biomass", S3, "g"),
                          ("agents", S3, ""), ("losses", S3 + ("cause",), "g d-1"), ("catch", S3, "g d-1"),
                          ("eggs", S3, "d-1"), ("trait_mean", S3 + ("trait",), ""), ("trait_sd", S3 + ("trait",), ""),
-                         ("plankton", ("time", "pool"), "mmol N"), ("total_N", ("time",), "mmol N"),
+                         ("plankton", ("time", "pool"), "mmol N"), ("benthos", ("time",), "g"),
+                         ("total_N", ("time",), "mmol N"),
                          ("ext_N", ("time",), "mmol N"), ("budget_error", ("time",), ""), ("ibm_cells", ("time",), ""),
                          ("max_gen", S3, ""), ("behavior", S3 + ("behavior",), "fraction of agent fish"),
                          ("oxygen", ("time",), "mmol O2"), ("o2_min", ("time",), "mmol O2 m-3"),
@@ -2549,6 +2790,8 @@ class Output:
         tm = S.mu[:, :, None, None] + S.sd[:, :, None, None] * PS1 / np.maximum(Nt, 1e-300)[:, None]
         o.F["trait_mean"][n] = np.where((Nt[:, None] > 0) & g.mask, tm, np.nan)
         o.F["ibm"][n] = m.ibm
+        if "benthos" in o.F.variables:
+            o.F["benthos"][n] = np.where(g.mask, m.npzd.B / RHO_N, np.nan)
         o.F.sync()
 
     def snapshot(o):

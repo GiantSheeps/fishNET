@@ -1,5 +1,5 @@
 # Fishing mortality per fishNET species from RAM Legacy v4.65 stock assessments.
-# Written by `python obsval.py --tables` on 2026-09-26.
+# Written by `python obsval.py --tables` on 2026-10-09.
 # F_ram: 1993-2021 mean of -ln(1 - catch/biomass) per stock (or the assessed F where there is no
 #        exploitation rate), averaged over the species' stocks weighted by their biomass. 1/yr.
 # F_model = 0.5 x F_ram.  NOTE: RAM fishing is DELIBERATELY SCALED DOWN by 0.5 for now,
@@ -164,3 +164,35 @@ stocks = 18
 of = 21
 min = 0.002
 max = 2.285
+
+[flying_squid]
+F_ram = 0.2326
+F_model = 0.1163
+stocks = 2
+of = 2
+min = 0.192
+max = 0.295
+
+[blue_shark]
+F_ram = 0.107
+F_model = 0.0535
+stocks = 2
+of = 4
+min = 0.072
+max = 0.187
+
+[shortfin_mako]
+F_ram = 0.1425
+F_model = 0.0713
+stocks = 2
+of = 4
+min = 0.101
+max = 0.151
+
+[spiny_dogfish]
+F_ram = 0.0336
+F_model = 0.0168
+stocks = 4
+of = 5
+min = 0.011
+max = 0.494

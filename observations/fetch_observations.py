@@ -27,6 +27,13 @@ SPECIES = {
     "polar_cod": "Boreogadus saida",           "silverfish": "Pleuragramma antarcticum",
     "toothfish": "Dissostichus mawsoni",
     "sardinella": "Sardinella longiceps",      "anchovy": "Engraulis encrasicolus",
+    "jumbo_squid": "Dosidicus gigas",          "flying_squid": "Todarodes pacificus",
+    "shortfin_squid": "Illex argentinus",      "blue_shark": "Prionace glauca",
+    "shortfin_mako": "Isurus oxyrinchus",      "spiny_dogfish": "Squalus acanthias",
+    "blue_whale": "Balaenoptera musculus",     "fin_whale": "Balaenoptera physalus",
+    "humpback_whale": "Megaptera novaeangliae", "minke_whale": "Balaenoptera acutorostrata",
+    "sperm_whale": "Physeter macrocephalus",   "killer_whale": "Orcinus orca",
+    "common_dolphin": "Delphinus delphis",     "bottlenose_dolphin": "Tursiops truncatus",
 }
 # Model species that stand for a whole genus or family: OBIS is also queried at that level, and
 # obsval.py validates them against it (saved as grid3_<taxon>.geojson)

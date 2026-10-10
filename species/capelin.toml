@@ -1,6 +1,7 @@
 # Capelin (Mallotus villosus) - sub-Arctic zooplankton-to-cod bridge
 name = "capelin"
 group = "forage"   # dashboard grouping only; the model ignores it
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#7fd4dd"
 length_weight = [0.0085, 3.05]
 L_inf = 20.0

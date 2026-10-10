@@ -1,6 +1,7 @@
 # Pleuronectidae and Soleidae - shallow-shelf benthic invertebrate croppers
 name = "flounder"
 group = "benthic"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#9467bd"
 length_weight = [0.0095, 3.15]
 L_inf = 45.0

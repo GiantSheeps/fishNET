@@ -1,6 +1,7 @@
 # Skipjack tuna (Katsuwonus pelamis) - bulk of global tuna biomass
 name = "skipjack"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#d62728"
 length_weight = [0.02, 2.95]
 L_inf = 90.0

@@ -1,0 +1,62 @@
+# Humpback whale (Megaptera novaeangliae) - krill and forage-fish lunge feeder, coastal breeder; always individuals
+# Size: adults 12-16 m, ~30 t at 14 m (W = 0.0109 L^3); calf 4.5 m, ~1 t; weaned at ~8.5 m; mature ~11.5-12 m.
+# Life history: lifespan 50+ yr, calving every 2-3 yr, adult survival ~0.96/yr; tropical breeding grounds (Clapham 2000).
+# Abundance ~135,000 (IUCN 2018).
+name = "humpback_whale"
+group = "whales"   # dashboard grouping only; the model ignores it
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#4292c6"
+individual = true   # always an agent, never biomass (see Model.individualise)
+mate_block_deg = 20.0   # ripe females find mates within this lat/lon block, not just their own cell
+air_breathing = true   # lungs: no metabolic-index limit, no hypoxia mortality
+endotherm = true   # no Q10 on intake and respiration
+live_bearing = true   # the egg stage is a fetus/newborn: nothing eats it as plankton
+egg_cannibalism = 0.0
+length_weight = [0.0109, 3.0]
+L_inf = 1450.0
+L_juv = 850.0
+lifespan_days = 18000
+egg_days = 2.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 12.0
+cmax = 0.15
+alpha = 0.82
+K_food = 0.05
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.5
+kappa_R = 0.4
+gonad_frac = 0.045
+spawn_doy = [1, 365]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0075
+m_early = 0.0003
+K_nursery = 0.4
+K_adult = 1.5
+m_thermal = 0.01
+fishing_L50_L95 = [1000000000.0, 2000000000.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate", "n_polar", "s_polar"]   # starting distribution only: animals may move anywhere afterwards
+depth_range = [0, 250]   # m (clipped to the model's deepest level)
+A_o = 0.9   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.0
+m_hypoxia = 0.0
+larva_depth_max = 50
+prey_size_ratio = 0.003
+prey_size_sd = 2.5
+diet = { krill = 1.0, zoo = 0.2 }
+larva_diet = { krill = 1.0 }
+fish_diet = { herring = 0.8, capelin = 0.8, anchovy = 0.5, sardine_eu = 0.4, sardine_pacific = 0.4, anchoveta = 0.4 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [12.0, 1.5, 0.4]
+T_width = [12.0, 1.2, 0.3]
+speed = [0.12, 0.014, 0.3]
+metab = [0.8, 0.1, 0.3]
+L_mat = [1200.0, 72.0, 0.4]
+egg_mass = [1000000.0, 120000.0, 0.3]
+w_therm = [1.5, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-0.2, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [3.5, 0.5, 0.3]
+w_shelf = [0.8, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

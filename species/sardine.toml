@@ -1,6 +1,7 @@
 # Small pelagic planktivore (Sardina-like)
 name = "sardine"
 group = "forage"
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#1f77b4"
 length_weight = [0.008, 3.1]     # W[g] = a L[cm]^b
 L_inf = 24.0                      # cm, asymptotic length at feeding level f_ref and T_opt

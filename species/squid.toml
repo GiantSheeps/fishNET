@@ -1,6 +1,7 @@
 # Oceanic and Humboldt squids (Ommastrephidae) - voracious, fast-growing mid-trophic link
 name = "squid"
 group = "cephalopods"
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#e377c2"
 length_weight = [0.007, 3.1]
 L_inf = 100.0

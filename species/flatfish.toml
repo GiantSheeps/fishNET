@@ -1,6 +1,7 @@
 # Benthic flatfish feeding on detritus and small zooplankton (Pleuronectes-like)
 name = "flatfish"
 group = "benthic"
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#9467bd"
 length_weight = [0.01, 3.0]
 L_inf = 45.0

@@ -1,5 +1,5 @@
 # Starting biomass per fishNET species, used when [run] initial_biomass = "literature".
-# Written by `python obsval.py --tables` on 2026-09-26. biomass_t is the global total in
+# Written by `python obsval.py --tables` on 2026-10-09. biomass_t is the global total in
 # tonnes; the model spreads it as biomass_t x 1e6 / 3.6e+14 m2, the namelists' convention.
 # Assessed species: the sum of their RAM Legacy stocks, which misses unassessed stocks (a lower bound).
 # Validating against RAM after starting from RAM is partly circular: compare the end state, not the start.
@@ -139,31 +139,122 @@ biomass_t = 9348000.0
 coverage = "assessed stocks only (lower bound)"
 source = "RAM Legacy v4.65, 1993-2021 mean of 12 stocks' total biomass (TBbest) and 6 stocks' spawning biomass where no total is given, of 21 current stocks"
 
+[jumbo_squid]
+biomass_t = 2000000.0
+low_t = 500000.0
+high_t = 5000000.0
+coverage = "eastern Pacific, derived"
+source = "IMARPE acoustic surveys off Peru, 1999-2015: 0.1-1.7 Mt, usually 0.5-0.8 Mt in summer (Inf. Inst. Mar Peru 43(1)); the species also ranges off Chile, Mexico and offshore, and its fishery lands 0.5-1 Mt a year, so ~2 Mt over the whole range."
+
+[flying_squid]
+biomass_t = 2312000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 2 stocks' total biomass (TBbest), of 2 current stocks"
+
+[shortfin_squid]
+biomass_t = 1500000.0
+low_t = 740000.0
+high_t = 1800000.0
+coverage = "SW Atlantic Illex argentinus"
+source = "Illex argentinus 1.32-1.80 Mt from an environmentally dependent surplus-production assessment; B_MSY ~0.74 Mt in other assessments (fisheryprogress.org stock assessment review). I. illecebrosus is small beside it (NW Atlantic catches ~10-25 kt)."
+
+[blue_shark]
+biomass_t = 893700.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 1 stocks' total biomass (TBbest) and 1 stocks' spawning biomass where no total is given, of 4 current stocks"
+
+[shortfin_mako]
+biomass_t = 150000.0
+low_t = 50000.0
+high_t = 300000.0
+coverage = "global, derived"
+source = "No assessed total biomass. N Atlantic catches 3.6-4.75 kt/yr while overfished (ICCAT SCRS 2017, B2015/BMSY 0.57-0.85); other oceans land about as much again; at F ~0.1-0.15 (RAM N Pacific) that implies ~0.1-0.2 Mt."
+
+[spiny_dogfish]
+biomass_t = 1000000.0
+coverage = "assessed stocks only (lower bound)"
+source = "RAM Legacy v4.65, 1993-2021 mean of 3 stocks' total biomass (TBbest) and 1 stocks' spawning biomass where no total is given, of 5 current stocks"
+
+[blue_whale]
+biomass_t = 1200000.0
+low_t = 700000.0
+high_t = 2250000.0
+coverage = "global"
+source = "10,000-25,000 animals (IUCN Red List 2018; Antarctic >2,000, Branch et al. 2007) x ~80 t mean mass."
+
+[fin_whale]
+biomass_t = 5000000.0
+low_t = 3500000.0
+high_t = 7000000.0
+coverage = "global"
+source = "~100,000 animals (IUCN Red List 2018) x ~50 t mean mass."
+
+[humpback_whale]
+biomass_t = 3800000.0
+low_t = 2500000.0
+high_t = 4500000.0
+coverage = "global"
+source = "~135,000 animals (IUCN Red List 2018) x ~28 t mean mass."
+
+[minke_whale]
+biomass_t = 4300000.0
+low_t = 2500000.0
+high_t = 6000000.0
+coverage = "global"
+source = "Antarctic minke ~515,000 (IWC 2012 circumpolar surveys) plus common minke ~200,000, x ~6 t mean mass."
+
+[sperm_whale]
+biomass_t = 7200000.0
+low_t = 3000000.0
+high_t = 15000000.0
+coverage = "global"
+source = "~360,000 animals (Whitehead 2002, Mar. Ecol. Prog. Ser. 242:295) x ~20 t mean mass (females ~15 t, males ~45 t)."
+
+[killer_whale]
+biomass_t = 175000.0
+low_t = 150000.0
+high_t = 500000.0
+coverage = "global, minimum"
+source = "At least 50,000 animals (Forney & Wade 2006, in Whales, Whaling and Ocean Ecosystems) x ~3.5 t."
+
+[common_dolphin]
+biomass_t = 480000.0
+low_t = 300000.0
+high_t = 800000.0
+coverage = "global"
+source = "~6 million animals, the most abundant cetacean (NAMMCO; Hammond et al. 2008) x ~80 kg."
+
+[bottlenose_dolphin]
+biomass_t = 140000.0
+low_t = 100000.0
+high_t = 300000.0
+coverage = "global, minimum"
+source = "At least 600,000 animals (NAMMCO; Wells & Scott 2009) x ~230 kg."
+
 [squid]
 biomass_t = 15000000.0
-low_t = 5000000.0
+low_t = 10000000.0
 high_t = 30000000.0
-coverage = "global oceanic"
-source = "Global oegopsid and neritic cephalopod biomass estimates (Rodhouse et al. 2014, Arkhipkin et al. 2015)."
+coverage = "global"
+source = "Global cephalopod biomass estimates (Rodhouse et al. 2014; Hunsicker et al. 2010)."
 
 [shark]
 biomass_t = 3000000.0
-low_t = 1000000.0
+low_t = 1500000.0
 high_t = 6000000.0
-coverage = "global pelagic"
-source = "Global pelagic shark biomass estimates (Dulvy et al. 2014, Worm et al. 2013)."
+coverage = "global"
+source = "Pelagic and coastal shark biomass synthesis (Dulvy et al. 2014; Worm et al. 2013)."
 
 [whale]
 biomass_t = 8000000.0
-low_t = 4000000.0
-high_t = 15000000.0
+low_t = 5000000.0
+high_t = 12000000.0
 coverage = "global"
-source = "Global baleen whale biomass estimates (IWC, Christensen 2006, Roman et al. 2014)."
+source = "Baleen whale global biomass synthesis (IWC estimates; Christensen 2006)."
 
 [dolphin]
 biomass_t = 4000000.0
 low_t = 2000000.0
-high_t = 8000000.0
+high_t = 7000000.0
 coverage = "global"
-source = "Global oceanic odontocete/dolphin biomass estimates (Hammond et al., Barlow et al.)."
-
+source = "Delphinidae and small odontocete population estimates (Hammond et al. 2013)."

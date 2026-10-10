@@ -1,6 +1,7 @@
 # Oceanic dolphins and small toothed cetaceans (Delphinidae) - fast social pack hunter
 name = "dolphin"
 group = "mammals"
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#d95f02"
 length_weight = [0.009, 3.05]
 L_inf = 260.0

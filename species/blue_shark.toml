@@ -1,0 +1,59 @@
+# Blue shark (Prionace glauca) - the most abundant oceanic shark, squid and small-fish predator
+# Size: TL to ~3.3 m, ~100 kg at 2.5 m (W = 0.00318 L^3.13); pups ~45 cm, ~0.5 kg; mature at ~2 m.
+# Life history: ~20 yr, litters of ~35 pups every 2 yr (Nakano & Stevens 2008); M ~0.2/yr.
+# Biomass: RAM Legacy (Indian Ocean total and N Pacific spawning biomass), a lower bound.
+name = "blue_shark"
+group = "sharks"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#17becf"
+live_bearing = true   # the egg stage is a fetus/newborn: nothing eats it as plankton
+egg_cannibalism = 0.0
+length_weight = [0.00318, 3.13]
+L_inf = 330.0
+L_juv = 50.0
+lifespan_days = 7300
+egg_days = 2.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 18.0
+cmax = 0.18
+alpha = 0.78
+K_food = 0.03
+f_crit = 0.2
+c_swim = 0.4
+reserve_max = 0.35
+kappa_R = 0.4
+gonad_frac = 0.15
+spawn_doy = [90, 240]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0072
+m_early = 0.001
+K_nursery = 0.3
+K_adult = 1.0
+m_thermal = 0.03
+fishing_L50_L95 = [120.0, 180.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]   # starting distribution only: animals may move anywhere afterwards
+depth_range = [0, 600]   # m (clipped to the model's deepest level)
+A_o = 0.5   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.0
+m_hypoxia = 0.2
+larva_depth_max = 100
+prey_size_ratio = 0.15
+prey_size_sd = 1.5
+plankton_L_max = 60.0   # cm: bigger animals no longer eat plankton
+diet = {}
+larva_diet = { zoo = 0.3, krill = 0.5 }
+fish_diet = { flying_squid = 0.9, shortfin_squid = 0.8, jumbo_squid = 0.6, lanternfish = 0.5, herring = 0.5, sardine_eu = 0.5, sardine_pacific = 0.5, anchovy = 0.5, sardinella = 0.4, hake = 0.4, skipjack = 0.3 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [16.0, 1.5, 0.4]
+T_width = [6.0, 0.6, 0.3]
+speed = [1.0, 0.12, 0.3]
+metab = [0.85, 0.1, 0.3]
+L_mat = [200.0, 12.0, 0.4]
+egg_mass = [480.0, 57.6, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-0.5, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-1.0, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [-0.5, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

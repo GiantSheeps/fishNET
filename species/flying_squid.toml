@@ -1,0 +1,58 @@
+# Japanese flying squid (Todarodes pacificus) - neritic-oceanic ommastrephid of the NW Pacific
+# Size: ML to ~30 cm, ~300 g at 25 cm (W = 0.0192 ML^3); matures at ~20 cm.
+# Life history: one-year life cycle, autumn and winter spawning cohorts in the East China Sea and Sea of Japan.
+# Biomass: RAM Legacy Japanese stock assessments (two stocks, ~2.3 Mt).
+name = "flying_squid"
+group = "cephalopods"   # dashboard grouping only; the model ignores it
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#f7b6d2"
+length_weight = [0.0192, 3.0]
+L_inf = 30.0
+L_juv = 1.0
+lifespan_days = 365
+egg_days = 4.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 15.0
+cmax = 0.35
+alpha = 0.75
+K_food = 0.04
+f_crit = 0.2
+c_swim = 0.6
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.12
+spawn_doy = [240, 90]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.008
+m_early = 0.18
+K_nursery = 2.0
+K_adult = 8.0
+m_thermal = 0.04
+fishing_L50_L95 = [15.0, 22.0]
+lat_sectors = ["n_temperate"]   # starting distribution only: animals may move anywhere afterwards
+lon_sectors = ["pacific_w", "indian_e"]
+depth_sectors = ["epipelagic", "mesopelagic"]
+A_o = 0.65   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.8
+m_hypoxia = 0.15
+larva_depth_max = 80
+prey_size_ratio = 0.08
+prey_size_sd = 1.8
+plankton_L_max = 12.0   # cm: bigger animals no longer eat plankton
+diet = { zoo = 0.4, krill = 0.8 }
+larva_diet = { zoo = 0.8, krill = 0.2 }
+fish_diet = { anchovy = 0.8, sardine_pacific = 0.6, lanternfish = 0.6, pollock = 0.4, flying_squid = 0.2 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [15.0, 1.5, 0.4]
+T_width = [5.0, 0.5, 0.3]
+speed = [1.6, 0.192, 0.3]
+metab = [1.1, 0.1, 0.3]
+L_mat = [20.0, 1.2, 0.4]
+egg_mass = [0.0004, 4.8e-05, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-2.5, 1.0, 0.3]
+w_crowd = [0.5, 0.5, 0.3]
+w_light = [-3.0, 0.5, 0.3]
+w_home = [1.0, 0.5, 0.3]
+w_shelf = [-0.5, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

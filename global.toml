@@ -78,6 +78,11 @@ kz_ml = 0.02
 kz_bg = 1.0e-5
 kz_grad = 0.005
 wind_speed = 7.0             # m/s, sets the air-sea oxygen transfer velocity
+upwelling_from_w = true      # netcdf: vertical velocity from the forcing currents' divergence (removed when they are made
+                             # non-divergent) exchanges water across each level boundary at rate w where it rises, so
+                             # upwelling brings up the model's own deep nutrients (conservative; no external source)
+upwell_depth = 100.0         # depth at which the upwelling rate w_up is reported (diagnostics)
+upwell_smooth = 1            # passes of neighbour smoothing on w (grid-scale divergence is noisy)
 warming_per_year = 0.0
 diurnal_dT = 0.5             # daytime warm skin (degC at the surface, e-folding 10 m)
 # shallow_water: upper layer(s) over a resting abyss, Lax-Wendroff (P. Connolly), spun up once and cached.
@@ -109,9 +114,16 @@ sw_seed = 0
 O2_init = "woa"                # initial oxygen: "woa" (World Ocean Atlas 2023 annual mean) or "profile" (the
 O2_file = "observations/woa/woa23_all_o00_01.nc"   # saturation profile below). With "woa", the sea bed also relaxes
                                # toward WOA instead of the constant O2_deep.
-detritus_food = "bed"          # detritus as fish food (the benthos proxy): "bed" = the detritus in sea-bed cells only;
-                               # "bed_flux" = only what sinks onto the bed each step (starved deep bottom fish in a
-                               # 1-year test); "pool" = the whole detritus pool anywhere (old)
+detritus_food = "benthos"      # what the "detritus" diet item is: "benthos" = a benthic fauna pool on the sea bed, fed by
+                               # sinking detritus (since 2026-10-09); "bed" = the detritus in sea-bed cells; "bed_flux" =
+                               # only what sinks onto the bed each step; "pool" = the whole detritus pool anywhere (old)
+benthos_eff = 0.1              # share of the detritus reaching the bed that becomes benthic fauna (FEISTY uses 0.1)
+benthos_loss = 0.004           # 1/d respiration and death of the benthos (P/B ~1.5 per year), back to nutrients
+benthos_init = 1.0             # g m-2 to start from
+fish_refuge = 0.05             # mmol N m-3: plankton fish can find is C / (C + fish_refuge) of what is there (Holling
+                               # type III), so a grazed-down bloom keeps a refuge instead of crashing to nothing
+iron_limitation = "hnlc"       # "hnlc": phytoplankton growth x iron_factor in the Southern Ocean, subarctic Pacific and
+iron_factor = 0.5              # eastern equatorial Pacific (off shelves shallower than 500 m); "none" = nitrogen only
 N_deep = 15.0
 N_surf = 2.0
 T_init_O2 = 12.0             # degC used for the initial oxygen saturation profile
@@ -146,6 +158,8 @@ export_bottom = true         # detritus sinking below the domain is exported
 [hybrid]
 juvenile_bins = 6            # progress bins toward maturity in biomass-cell juveniles (1 = one class: some fish mature
                              # almost at once; 6 = Erlang-6 time to maturity with the same mean)
+larva_bins = 3               # ...and toward the juvenile length in larvae (1 = a hatchling can be a juvenile next step)
+promote_at_size = true       # fish moving up a stage leave at the next stage's entry size, not their class's mean
 reserve_spread = 0.5         # biomass cells: individual reserves assumed uniform within +/-50% of the class mean
 mode = "dynamic"             # "static", "dynamic", "all" or "none"
 regions = [{ lon = -14.0, lat = 36.0, radius_km = 500.0 }]
@@ -160,6 +174,9 @@ min_class_frac = 1.0e-6      # biomass classes below this share of their species
 min_agent_frac = 2.0e-5      # agents below this fraction of the reference agent biomass rejoin the fields
 min_class_fish = 1.0
 max_agents = 120000
+individual_agents = 2000     # species with `individual = true` (whales) start as at most this many agents each, so
+                             # one agent is ceil(population / 2000) animals (1 = true individuals when it fits);
+                             # they stay agents everywhere, inside IBM cells or not, and do not count toward max_agents
 
 [behavior]
 engine = "probabilistic"     # "probabilistic": sample one behaviour (forage, seek_habitat, flee, school, hide, home,
@@ -209,7 +226,8 @@ mode = "ram"                 # "ram" or "constant" (each species' fishing_F ever
 file = "observations/ram_fishing_series.json"
 scale = 1.0                  # multiplies the RAM F (it was 0.5 in the 2026-09-24 runs)
 year = 0   # 0 = the calendar year of the model date; a year (e.g. 1993) fixes it, for spin-ups
-unassessed = 0.0             # fraction of the species' mean F applied in areas without assessed stocks
+unassessed = 0.25            # fraction of the species' mean F applied in areas without assessed stocks (2026-10-09: was
+                             # 0, which made every unassessed area a marine reserve; unchecked against Sea Around Us)
 
 # fishing_F below (used only with [fishing] mode = "constant") is RAM Legacy F SCALED DOWN BY 0.5.
 # Unscaled values (F_ram) and stock counts: observations/ram_fishing.toml. Species with no RAM stocks are unfished.
@@ -335,25 +353,77 @@ file = "species/toothfish.toml"
 biomass = 0.0002778         # 1e+05 t: Antarctic toothfish, top predator, small stock
 fishing_F = 0.0078   # RAM Legacy F 0.0157 x 0.5 (SCALED DOWN), 1 of 1 stocks
 
+# Cephalopods, sharks and cetaceans: a few representative species each (they replace the lumped squid, shark,
+# whale and dolphin files, which archived configs still use). Whales have `individual = true`: always agents.
 [[species]]
-file = "species/squid.toml"
-biomass = 0.04167           # 1.5e+07 t: oceanic and coastal cephalopods
-fishing_F = 0.15
+file = "species/jumbo_squid.toml"
+biomass = 0.005556           # 2e+06 t: Humboldt squid, eastern Pacific
+fishing_F = 0.15   # no RAM Legacy stocks; ~0.5-1 Mt/yr landings on ~2 Mt (constant mode only)
 
 [[species]]
-file = "species/shark.toml"
-biomass = 0.008333          # 3e+06 t: pelagic sharks (blue, mako, oceanic whitetip)
-fishing_F = 0.05
+file = "species/flying_squid.toml"
+biomass = 0.006422           # 2.3e+06 t: Japanese flying squid, NW Pacific
+fishing_F = 0.1163   # RAM Legacy F 0.2326 x 0.5 (SCALED DOWN), 2 of 2 stocks
 
 [[species]]
-file = "species/whale.toml"
-biomass = 0.02222           # 8e+06 t: baleen whales (minke, fin, humpback)
-fishing_F = 0.0
+file = "species/shortfin_squid.toml"
+biomass = 0.004167           # 1.5e+06 t: Illex shortfin squids, W Atlantic
+fishing_F = 0.15   # no RAM biomass; landings ~0.2-0.5 Mt/yr on ~1.5 Mt (constant mode only)
 
 [[species]]
-file = "species/dolphin.toml"
-biomass = 0.01111           # 4e+06 t: oceanic dolphins and small odontocetes
-fishing_F = 0.0
+file = "species/blue_shark.toml"
+biomass = 0.002482           # 8.9e+05 t: blue shark, all oceans
+fishing_F = 0.0535   # RAM Legacy F 0.107 x 0.5 (SCALED DOWN), 2 of 4 stocks
+
+[[species]]
+file = "species/shortfin_mako.toml"
+biomass = 0.0004167           # 1.5e+05 t: shortfin mako
+fishing_F = 0.0713   # RAM Legacy F 0.1425 x 0.5 (SCALED DOWN), 2 of 4 stocks
+
+[[species]]
+file = "species/spiny_dogfish.toml"
+biomass = 0.002778           # 1e+06 t: spiny dogfish, temperate shelves
+fishing_F = 0.0168   # RAM Legacy F 0.0336 x 0.5 (SCALED DOWN), 4 of 5 stocks
+
+[[species]]
+file = "species/blue_whale.toml"
+biomass = 0.003333           # 1.2e+06 t: blue whale (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/fin_whale.toml"
+biomass = 0.01389           # 5e+06 t: fin whale (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/humpback_whale.toml"
+biomass = 0.01056           # 3.8e+06 t: humpback whale (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/minke_whale.toml"
+biomass = 0.01194           # 4.3e+06 t: Antarctic + common minke (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/sperm_whale.toml"
+biomass = 0.02           # 7.2e+06 t: sperm whale (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/killer_whale.toml"
+biomass = 0.0004861           # 1.8e+05 t: killer whale (always individuals)
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/common_dolphin.toml"
+biomass = 0.001333           # 4.8e+05 t: common dolphin
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
+
+[[species]]
+file = "species/bottlenose_dolphin.toml"
+biomass = 0.0003889           # 1.4e+05 t: common bottlenose dolphin
+fishing_F = 0.0   # no RAM Legacy stocks: unfished
 
 [calibration]                # python calibrate.py namelist.toml targets.toml --method abc
 [calibration.prior]

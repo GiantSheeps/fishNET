@@ -49,11 +49,24 @@ const Charts = (() => {
     if (!x.length || !series.length) return empty(node, opts.emptyMsg || "no data yet");
 
     const W = Math.max(node.clientWidth, 220), H = Math.max(node.clientHeight, 110);
-    const showLegend = series.length >= 2;
-    const nLegendRows = showLegend ? Math.ceil(series.length / Math.max(1, Math.floor(W / 130))) : 0;
-    const svgH = H - nLegendRows * 17;
+    const showLegend = series.length >= 2 && opts.legend !== false;
+    // Lay the legend out first and measure it, so the plot shrinks to make room instead of the legend
+    // spilling under the next card (a dozen functional groups wrap onto several rows).
+    node.innerHTML = "";
+    let lg = null;
+    if (showLegend) {
+      lg = document.createElement("div");
+      lg.className = "chart-legend";
+      lg.innerHTML = series.map(s => `<span class="row">${swatch(s, opts.stacked)}${s.name}</span>`).join("");
+      node.appendChild(lg);
+    }
+    if (lg && lg.offsetHeight > 0.45 * H) {             // too many entries for this card: say so, keep the plot
+      lg.innerHTML = `<span class="row muted">${series.length} series · hover for names (the species panel and map legend list them)</span>`;
+    }
+    const svgH = Math.max(80, H - (lg ? lg.offsetHeight + 2 : 0));
     // direct labels only pay for themselves with 2–4 lines; one series is named by the title
     const labelled = !opts.stacked && series.length >= 2 && series.length <= 4;
+    const bands = series.length <= 4;                   // more than a few ±SD bands only blur into one another
     const labelW = labelled ? Math.min(10 + Math.max(...series.map(s => s.name.length)) * 6.1, 0.3 * W) : 0;
     const m = { l: 48, r: labelled ? labelW : 12, t: 8, b: 20 };
     const iw = Math.max(10, W - m.l - m.r), ih = Math.max(10, svgH - m.t - m.b);
@@ -73,7 +86,7 @@ const Charts = (() => {
     else for (const s of series) {
       for (let i = 0; i < x.length; i++) {
         consider(s.y[i]);
-        if (s.band) { consider(s.band[0][i]); consider(s.band[1][i]); }
+        if (s.band && series.length <= 4) { consider(s.band[0][i]); consider(s.band[1][i]); }
       }
     }
     if (!isFinite(lo) || !isFinite(hi)) return empty(node, "no finite values");
@@ -133,14 +146,16 @@ const Charts = (() => {
       });
     } else {
       series.forEach(s => {
-        if (s.band) {
+        if (s.band && bands) {
           const up = x.map((xv, i) => [sx(xv), sy(s.band[1][i])]);
           const dn = x.map((xv, i) => [sx(xv), sy(s.band[0][i])]).reverse();
           svg.appendChild(el("path", { d: path(up) + "L" + path(dn).slice(1) + "Z", fill: s.color, "fill-opacity": .13, stroke: "none" }));
         }
         const pts = [];
         for (let i = 0; i < x.length; i++) if (isFinite(s.y[i]) && (!log || s.y[i] > 0)) pts.push([sx(x[i]), sy(s.y[i])]);
-        svg.appendChild(el("path", { class: "series-line", d: path(pts), stroke: s.color }));
+        const line = el("path", { class: "series-line", d: path(pts), stroke: s.color });
+        if (s.dash) { line.setAttribute("stroke-dasharray", s.dash); line.style.strokeLinecap = "butt"; }
+        svg.appendChild(line);
       });
     }
 
@@ -189,7 +204,7 @@ const Charts = (() => {
         if (isFinite(yv) && (!log || yv > 0)) {
           dots[k].setAttribute("cx", sx(x[i])); dots[k].setAttribute("cy", sy(yv)); dots[k].setAttribute("opacity", 1);
         } else dots[k].setAttribute("opacity", 0);
-        rows += `<div class="r"><span><i class="sw" style="background:${s.color}"></i>${s.name}</span><span>${fmt(v)}</span></div>`;
+        rows += `<div class="r"><span>${swatch(s, opts.stacked, "sw")}${s.name}</span><span>${fmt(v)}</span></div>`;
       });
       tp.innerHTML = `<div class="t">${opts.xLabel || "day"} ${opts.xFmt ? opts.xFmt(x[i]) : fmt(x[i], 5)}${opts.unit ? " · " + opts.unit : ""}</div>${rows}`;
       tp.style.display = "block";
@@ -201,14 +216,15 @@ const Charts = (() => {
       cross.setAttribute("opacity", 0); dots.forEach(d => d.setAttribute("opacity", 0)); tp.style.display = "none";
     });
 
-    node.innerHTML = "";
-    node.appendChild(svg);
-    if (showLegend) {
-      const lg = document.createElement("div");
-      lg.className = "chart-legend";
-      lg.innerHTML = series.map(s => `<span class="row"><i class="swatch" style="background:${s.color}"></i>${s.name}</span>`).join("");
-      node.appendChild(lg);
-    }
+    svg.style.height = svgH + "px";
+    node.insertBefore(svg, lg);
+  }
+
+  /* Legend and tooltip key: a square for areas and solid lines, a short line sample for dashed ones. */
+  function swatch(s, area, cls = "swatch") {
+    if (s.dash && !area)
+      return `<svg class="glyph" width="16" height="8" aria-hidden="true"><line x1="1" y1="4" x2="15" y2="4" stroke="${s.color}" stroke-width="2.4" stroke-dasharray="${s.dash}"/></svg>`;
+    return `<i class="${cls}" style="background:${s.color}"></i>`;
   }
 
   /* opts: {points:[{x,y,name?,color,r?}], logX, logY, diag (1:1 line), factor (dashed lines at ×/÷ factor, log axes),

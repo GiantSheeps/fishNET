@@ -1,6 +1,7 @@
 # Boreal demersal generalist predator (Gadus-like)
 name = "cod"
 group = "groundfish"
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#2ca02c"
 length_weight = [0.0075, 3.05]
 L_inf = 110.0

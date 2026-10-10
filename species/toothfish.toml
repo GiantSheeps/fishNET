@@ -1,6 +1,7 @@
 # Dissostichus mawsoni - top fish predator of the Antarctic shelf and slope
 name = "toothfish"
 group = "polar"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#1b6f3f"
 length_weight = [0.0075, 3.05]
 L_inf = 175.0

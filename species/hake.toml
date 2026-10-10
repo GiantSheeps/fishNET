@@ -1,6 +1,7 @@
 # Merluccius spp. - mid-latitude shelf-break predator, strong diel depth migration
 name = "hake"
 group = "groundfish"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#8fd18f"
 length_weight = [0.0075, 3.05]
 L_inf = 90.0

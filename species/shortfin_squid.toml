@@ -1,0 +1,58 @@
+# Shortfin squids (Illex argentinus and I. illecebrosus) - shelf-break ommastrephids of the Atlantic
+# Size: ML to ~35 cm, ~400 g at 30 cm (W = 0.0148 ML^3); matures at ~22 cm.
+# Life history: one-year life cycle, migrates between shelf-break feeding and spawning grounds.
+# Biomass: I. argentinus 1.3-1.8 Mt (environmentally dependent surplus-production assessment), B_MSY ~0.74 Mt.
+name = "shortfin_squid"
+group = "cephalopods"   # dashboard grouping only; the model ignores it
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#c51b7d"
+length_weight = [0.0148, 3.0]
+L_inf = 35.0
+L_juv = 1.0
+lifespan_days = 365
+egg_days = 4.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 10.0
+cmax = 0.35
+alpha = 0.75
+K_food = 0.04
+f_crit = 0.2
+c_swim = 0.6
+reserve_max = 0.3
+kappa_R = 0.7
+gonad_frac = 0.12
+spawn_doy = [120, 300]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.008
+m_early = 0.18
+K_nursery = 2.0
+K_adult = 8.0
+m_thermal = 0.04
+fishing_L50_L95 = [18.0, 25.0]
+lat_sectors = ["s_temperate", "n_temperate"]   # starting distribution only: animals may move anywhere afterwards
+lon_sectors = ["atlantic_w"]
+depth_sectors = ["epipelagic", "mesopelagic"]
+A_o = 0.65   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.8
+m_hypoxia = 0.15
+larva_depth_max = 80
+prey_size_ratio = 0.08
+prey_size_sd = 1.8
+plankton_L_max = 14.0   # cm: bigger animals no longer eat plankton
+diet = { zoo = 0.4, krill = 0.8 }
+larva_diet = { zoo = 0.8, krill = 0.2 }
+fish_diet = { lanternfish = 0.6, anchovy = 0.6, hake = 0.4, herring = 0.3, shortfin_squid = 0.3 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [10.0, 1.5, 0.4]
+T_width = [5.0, 0.5, 0.3]
+speed = [1.6, 0.192, 0.3]
+metab = [1.1, 0.1, 0.3]
+L_mat = [22.0, 1.3, 0.4]
+egg_mass = [0.0004, 4.8e-05, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-2.5, 1.0, 0.3]
+w_crowd = [0.5, 0.5, 0.3]
+w_light = [-3.0, 0.5, 0.3]
+w_home = [1.0, 0.5, 0.3]
+w_shelf = [1.0, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

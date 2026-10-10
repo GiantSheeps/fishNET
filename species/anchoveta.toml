@@ -1,6 +1,7 @@
 # Peruvian anchoveta (Engraulis ringens) - Humboldt upwelling forage engine
 name = "anchoveta"
 group = "forage"   # dashboard grouping only; the model ignores it
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#1f77b4"
 length_weight = [0.0085, 3.05]
 L_inf = 20.0

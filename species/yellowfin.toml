@@ -1,6 +1,7 @@
 # Yellowfin tuna (Thunnus albacares) - tropical to warm-temperate apex
 name = "yellowfin"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#e85a1a"
 length_weight = [0.02, 2.95]
 L_inf = 180.0
@@ -34,7 +35,7 @@ prey_size_sd = 1.0
 diet = { zoo = 0.15 }
 plankton_L_max = 45.0   # cm: krill-type prey until then (2026-09-26, after two 240-day checks); starved at 30-40
 larva_diet = { zoo = 1.0 }
-fish_diet = { squid = 0.7, skipjack = 0.4, anchoveta = 0.6, lanternfish = 0.5, sardine_pacific = 0.5, yellowfin = 0.15, sardinella = 0.6 }
+fish_diet = { jumbo_squid = 0.7, flying_squid = 0.5, shortfin_squid = 0.5, skipjack = 0.4, anchoveta = 0.6, lanternfish = 0.5, sardine_pacific = 0.5, yellowfin = 0.15, sardinella = 0.6 }
 
 [traits]                          # [mean, phenotypic sd, heritability]
 T_opt = [25.0, 1.5, 0.4]

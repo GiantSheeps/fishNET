@@ -1,6 +1,7 @@
 # Pacific bluefin (Thunnus orientalis) - trans-Pacific endotherm
 name = "bluefin_pacific"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#a83232"
 length_weight = [0.02, 2.95]
 L_inf = 280.0
@@ -36,7 +37,7 @@ prey_size_sd = 1.0
 diet = { zoo = 0.15 }
 plankton_L_max = 60.0   # cm: krill-type prey until then (2026-09-26, after two 240-day checks); starved at 30-40
 larva_diet = { zoo = 1.0 }
-fish_diet = { squid = 0.7, sardine_pacific = 1.0, pollock = 0.4, lanternfish = 0.4, anchoveta = 0.5, anchovy = 0.6 }
+fish_diet = { flying_squid = 0.7, jumbo_squid = 0.3, sardine_pacific = 1.0, pollock = 0.4, lanternfish = 0.4, anchoveta = 0.5, anchovy = 0.6 }
 
 [traits]                          # [mean, phenotypic sd, heritability]
 T_opt = [19.0, 2.0, 0.4]

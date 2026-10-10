@@ -1,6 +1,7 @@
 # Albacore (Thunnus alalunga) - temperate-ranging intermediate apex
 name = "albacore"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#f08c3a"
 length_weight = [0.02, 2.95]
 L_inf = 120.0
@@ -34,7 +35,7 @@ prey_size_sd = 1.0
 diet = { zoo = 0.15 }
 plankton_L_max = 30.0   # cm: bigger fish no longer eat plankton (2026-09-26); they need fish prey
 larva_diet = { zoo = 1.0 }
-fish_diet = { squid = 0.7, lanternfish = 0.6, sardine_pacific = 0.6, herring = 0.4, bristlemouth = 0.4, anchovy = 0.5, sardinella = 0.3 }
+fish_diet = { flying_squid = 0.6, jumbo_squid = 0.5, shortfin_squid = 0.5, lanternfish = 0.6, sardine_pacific = 0.6, herring = 0.4, bristlemouth = 0.4, anchovy = 0.5, sardinella = 0.3 }
 
 [traits]                          # [mean, phenotypic sd, heritability]
 T_opt = [18.0, 1.5, 0.4]

@@ -1,6 +1,7 @@
 # Swordfish (Xiphias gladius) - crosses the epi/mesopelagic boundary nightly
 name = "swordfish"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#5b4b8a"
 length_weight = [0.004, 3.1]
 L_inf = 300.0
@@ -34,7 +35,7 @@ prey_size_sd = 1.0
 diet = { zoo = 0.15 }
 plankton_L_max = 5.0   # cm: swordfish eat fish from ~1 cm (2026-09-26, after two 240-day checks)
 larva_diet = { zoo = 1.0 }
-fish_diet = { squid = 0.9, lanternfish = 0.6, bristlemouth = 0.4, skipjack = 0.3, hake = 0.4, sardinella = 0.2 }
+fish_diet = { jumbo_squid = 0.9, shortfin_squid = 0.9, flying_squid = 0.8, lanternfish = 0.6, bristlemouth = 0.4, skipjack = 0.3, hake = 0.4, sardinella = 0.2 }
 
 [traits]                          # [mean, phenotypic sd, heritability]
 T_opt = [20.0, 2.0, 0.4]

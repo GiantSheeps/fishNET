@@ -1,0 +1,62 @@
+# Blue whale (Balaenoptera musculus) - krill specialist, the largest animal; always individuals
+# Size: adults 21-27 m, ~100 t at 25 m (W = 0.0064 L^3); calf 7 m, 2.5 t; weaned at ~12.8 m; mature ~21-23 m.
+# Life history: lifespan 80-90 yr, one calf every 2-3 yr, adult survival ~0.97/yr (IWC; Branch et al. 2007).
+# Abundance 10,000-25,000 (IUCN Red List 2018), see observations/literature_biomass.toml.
+name = "blue_whale"
+group = "whales"   # dashboard grouping only; the model ignores it
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#08306b"
+individual = true   # always an agent, never biomass (see Model.individualise)
+mate_block_deg = 20.0   # ripe females find mates within this lat/lon block, not just their own cell
+air_breathing = true   # lungs: no metabolic-index limit, no hypoxia mortality
+endotherm = true   # no Q10 on intake and respiration
+live_bearing = true   # the egg stage is a fetus/newborn: nothing eats it as plankton
+egg_cannibalism = 0.0
+length_weight = [0.0064, 3.0]
+L_inf = 2500.0
+L_juv = 1280.0
+lifespan_days = 29000
+egg_days = 2.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 12.0
+cmax = 0.15
+alpha = 0.82
+K_food = 0.05
+f_crit = 0.2
+c_swim = 0.3
+reserve_max = 0.5
+kappa_R = 0.4
+gonad_frac = 0.035
+spawn_doy = [1, 365]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0078
+m_early = 0.0003
+K_nursery = 0.4
+K_adult = 1.5
+m_thermal = 0.01
+fishing_L50_L95 = [1000000000.0, 2000000000.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate", "n_polar", "s_polar"]   # starting distribution only: animals may move anywhere afterwards
+depth_range = [0, 300]   # m (clipped to the model's deepest level)
+A_o = 0.9   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.0
+m_hypoxia = 0.0
+larva_depth_max = 50
+prey_size_ratio = 0.001
+prey_size_sd = 2.0
+diet = { krill = 1.0, zoo = 0.2 }
+larva_diet = { krill = 1.0 }
+fish_diet = {}
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [8.0, 1.5, 0.4]
+T_width = [12.0, 1.2, 0.3]
+speed = [0.08, 0.01, 0.3]
+metab = [0.8, 0.1, 0.3]
+L_mat = [2150.0, 129.0, 0.4]
+egg_mass = [2500000.0, 300000.0, 0.3]
+w_therm = [1.5, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-0.2, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [3.0, 0.5, 0.3]
+w_shelf = [-0.3, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

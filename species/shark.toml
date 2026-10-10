@@ -1,6 +1,7 @@
 # Pelagic apex sharks (Prionace, Isurus, Carcharhinidae) - apex predator of open oceans
 name = "shark"
 group = "sharks"
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#17becf"
 length_weight = [0.005, 3.1]
 L_inf = 350.0

@@ -1,6 +1,7 @@
 # Cyclothone spp. - permanent twilight/bathypelagic ambush feeders
 name = "bristlemouth"
 group = "mesopelagic"   # dashboard grouping only; the model ignores it
+feisty = "mesopelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#5a5a5a"
 length_weight = [0.0045, 3.1]
 L_inf = 6.0

@@ -114,6 +114,7 @@ upwelling_depth = 100.0
 export_bottom = true         # detritus sinking below the domain is exported
 
 [hybrid]
+larva_bins = 3               # progress bins toward the juvenile length in biomass-cell larvae (1 = one class)
 reserve_spread = 0.5         # biomass cells: individual reserves assumed uniform within +/-50% of the class mean
 mode = "dynamic"             # "static", "dynamic", "all" or "none"
 regions = [{ lon = -14.0, lat = 36.0, radius_km = 500.0 }]

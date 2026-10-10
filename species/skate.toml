@@ -1,6 +1,7 @@
 # Raja spp. and Dasyatidae - slow, low-fecundity cartilaginous bottom foragers
 name = "skate"
 group = "benthic"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#c49bd6"
 length_weight = [0.0035, 3.2]
 L_inf = 110.0

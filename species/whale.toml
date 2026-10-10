@@ -1,6 +1,7 @@
 # Baleen whales (Balaenopteridae) - large krill and schooling forage fish filter-feeder
 name = "whale"
 group = "mammals"
+feisty = "none"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#1b9e77"
 length_weight = [0.012, 3.0]
 L_inf = 1500.0

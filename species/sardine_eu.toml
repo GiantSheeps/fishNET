@@ -1,6 +1,7 @@
 # European pilchard (Sardina pilchardus) - NE Atlantic and Mediterranean
 name = "sardine_eu"
 group = "forage"   # dashboard grouping only; the model ignores it
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#3f8fd2"
 length_weight = [0.0085, 3.05]
 L_inf = 25.0

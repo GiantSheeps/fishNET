@@ -1,6 +1,7 @@
 # Sardinops sagax - California, Humboldt, Benguela and Kuroshio stocks
 name = "sardine_pacific"
 group = "forage"   # dashboard grouping only; the model ignores it
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#6fb3e8"
 length_weight = [0.0085, 3.05]
 L_inf = 30.0

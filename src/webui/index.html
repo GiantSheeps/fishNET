@@ -75,6 +75,7 @@
         <select id="groupMode">
           <option value="none">each species</option>
           <option value="group">functional group</option>
+          <option value="feisty" title="FEISTY's functional types (Petrik et al. 2019; van Denderen et al. 2021)">FEISTY type</option>
           <option value="total">single total</option>
         </select>
       </label>
@@ -190,10 +191,10 @@
     <!-- ecosystem -->
     <div class="view" id="view-eco">
       <div class="grid2">
-        <div class="card"><div class="card-h">NPZD inventories (mmol N)<span class="card-s">log scale · N is all the ocean's nitrate, mostly deep, about 300× P+Z+D, so its changes don't show at this scale</span></div><div id="chNPZD" class="chart tall"></div></div>
+        <div class="card"><div class="card-h">NPZD and benthos inventories (mmol N)<span class="card-s">log scale · N is all the ocean's nitrate, mostly deep, about 300× P+Z+D, so its changes don't show at this scale</span></div><div id="chNPZD" class="chart tall"></div></div>
         <div class="card"><div class="card-h">Oxygen minimum (mmol O₂ m⁻³)</div><div id="chO2" class="chart tall"></div></div>
         <div class="card"><div class="card-h">Carbon export (mmol C d⁻¹)</div><div id="chExport" class="chart"></div></div>
-        <div class="card"><div class="card-h">Metabolic index φ by species</div><div id="chPhi" class="chart"></div></div>
+        <div class="card"><div class="card-h">Metabolic index φ by species<span class="card-s">air breathers left out</span></div><div id="chPhi" class="chart"></div></div>
         <div class="card"><div class="card-h">IBM cells in use</div><div id="chIbm" class="chart"></div></div>
         <div class="card"><div class="card-h">Relative nitrogen budget error</div><div id="chBudget" class="chart"></div></div>
         <div class="card wide"><div class="card-h">Behaviour budget (fraction of agent fish)<span class="card-s" id="behSpName"></span></div><div id="chBeh" class="chart"></div></div>
@@ -206,7 +207,7 @@
         <label class="field inline">trait
           <select id="traitChartSelect"></select>
         </label>
-        <span class="muted small">change in population mean breeding value since day 0; band = ±1 SD</span>
+        <span class="muted small">change in population mean breeding value since day 0; band = ±1 SD (drawn for up to 4 series)</span>
       </div>
       <div class="grid2">
         <div class="card wide"><div class="card-h">Trait evolution<span class="card-s" id="traitName"></span></div><div id="chTrait" class="chart tall"></div></div>
@@ -220,6 +221,7 @@
       <div class="controls">
         <button id="figBtn">Generate figures (plot.py)</button>
         <label class="check"><input type="checkbox" id="figAnim"> include MP4 animations (slow)</label>
+        <label class="check" title="feisty_compare.py: biomass by FEISTY functional type and size class, written to the run's feisty/ folder"><input type="checkbox" id="figFeisty" checked> FEISTY comparison</label>
         <span id="figStatus" class="muted small"></span>
       </div>
       <div id="figGrid" class="figgrid"></div>

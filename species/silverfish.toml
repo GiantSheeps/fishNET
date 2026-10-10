@@ -1,6 +1,7 @@
 # Pleuragramma antarcticum - keystone Southern Ocean shelf prey
 name = "silverfish"
 group = "polar"   # dashboard grouping only; the model ignores it
+feisty = "forage"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#c5dcf0"
 length_weight = [0.0085, 3.05]
 L_inf = 22.0

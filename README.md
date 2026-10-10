@@ -54,6 +54,7 @@ python src/fishnet.py --config namelist.toml
   behaviour, genetics, hybrid regulator, output
 - `plot.py` time series, stages, trait evolution, losses by cause, maps, trait maps, Hovmoller,
   life histories, agent tracks, depth use, and two MP4 animations
+- `feisty_compare.py` aggregates a finished run into FEISTY's functional types for model comparison (see below)
 - `dashboard.py` + `webui/` interactive browser dashboard: start a run, animate it while it runs
 - `get_forcing.py` (GLORYS, needs an account), `get_forcing_hycom.py` (HYCOM, no account) real ocean forcing
 - `validate.py` conservation, positivity, transport, genetics, aggregation round trips,
@@ -94,14 +95,16 @@ to equilibrium, which takes years. A resumed run does not spin up again.
   the sea bed relax toward it instead of the constant `O2_deep`. This gives real low-oxygen zones.
 
 ## Fishing
-`[fishing] mode = "ram"` (used by `global_species.toml` since 2026-09-26) fishes each species at its RAM
+`[fishing] mode = "ram"` (used by `global.toml` since 2026-09-26) fishes each species at its RAM
 Legacy fishing mortality **for the calendar year** of the model date, **only in the FAO major areas where it
 has assessed stocks**, times `scale` (1.0 = the assessed rate). `year = 1993` fixes the year (for spin-ups);
-`unassessed` applies that fraction of the species' mean F elsewhere (default 0). The table,
+`unassessed` applies that fraction of the species' mean F elsewhere (default 0; `global.toml` uses 0.25 since
+2026-10-09, so unassessed areas are not de facto marine reserves; the value is not yet checked against catch
+reconstructions such as Sea Around Us). The table,
 `observations/ram_fishing_series.json`, holds F per species, FAO area and year (1993-2021), from
 -ln(1 - catch/biomass) per stock averaged over the stocks assessed in each area, weighted by their biomass;
 years outside it take the nearest year. `mode = "constant"` (the default) uses each species' `fishing_F`
-everywhere, all the time; in `global_species.toml` those values are RAM F x 0.5, kept for comparison with
+everywhere, all the time; in `global.toml` those values are RAM F x 0.5, kept for comparison with
 the 2026-09-24 runs. Regenerate all the tables with `python src/obsval.py --tables`.
 
 ## Hindcast (real ocean years)
@@ -202,6 +205,42 @@ return to their own birth place) and mate finding (a ripe female needs an adult 
 strays beyond the core range fail to reproduce). Spawning grounds are not listed in the species files;
 biomass classes home up the gradient of ripe conspecifics, so aggregations form and persist on their own.
 
+## Cephalopods, sharks and cetaceans
+These are represented by a few literature-parameterised species each rather than one lumped category:
+jumbo, Japanese flying and shortfin squids; blue shark, shortfin mako and spiny dogfish; blue, fin, humpback,
+minke, sperm and killer whales; common and bottlenose dolphins. Their starting biomass is in
+`observations/literature_biomass.toml`: RAM Legacy where stocks are assessed (flying squid, blue shark, dogfish),
+otherwise a cited estimate (cetaceans are abundance x a population-mean body mass). The old `squid`, `shark`,
+`whale` and `dolphin` files are kept only for archived configs. Species switches used by these files:
+`air_breathing` (no metabolic-index limit or hypoxia), `endotherm` (no Q10), `live_bearing` (the egg stage is a
+fetus or newborn, not plankton that anything eats).
+
+**Whales are always individuals** (`individual = true`). At the start all of a whale species' biomass becomes agents,
+wherever it is, and from then on they stay agents: they swim through biomass cells and IBM cells alike, are never
+merged into the fields, and their calves are born as agents. Each agent stands for `ceil(population /
+hybrid.individual_agents)` animals (default cap 2000 agents per species, or `agents` in the species file), so it is a
+true individual whenever the population fits under the cap; on the global grid one agent is a pod of tens of
+whales. Deaths are drawn per animal, so counts stay whole numbers. A female's calves come in agents of that same size,
+as many as her gonad pays for in full, and the rest carries over to her next season. Because whales are sparse,
+`mate_block_deg` (20 degrees) lets a ripe female find a mate within a lat/lon block instead of her own grid cell.
+Whale agents do not count against `hybrid.max_agents`.
+
+## Comparing with FEISTY
+FEISTY (Petrik et al. 2019; van Denderen et al. 2021) has no species, only size-structured functional types and
+unstructured benthic invertebrates. `feisty_compare.py` aggregates a run into them:
+
+    python src/feisty_compare.py runs/<name>                    # setupBasic: smallPel, largePel, demersals + benthos
+    python src/feisty_compare.py runs/<name> --setup vertical   # adds mesoPel and midwPred
+    python src/feisty_compare.py runs/<name> --window 730 --map jumbo_squid=large_pelagic
+
+Each species file names its type (`feisty = "forage" | "mesopelagic" | "large_pelagic" | "midwater_predator" |
+"demersal" | "none"`); cephalopods and marine mammals are `none` and reported apart, as are mesopelagics under
+setupBasic. Biomass is split into FEISTY's size classes (0.001-0.5, 0.5-250, 250-125,000 g) by each class's mean
+individual mass; eggs are left out. The benthos is fishNET's bed-cell detritus, and benthic production is FEISTY's
+0.1 x the detrital flux onto the bed. The script also writes the forcing FEISTY would need on the same grid
+(pelagic and bottom temperature, depth, detrital flux, zooplankton stocks). Output: `runs/<name>/feisty/`
+(`feisty.nc`, `feisty_summary.csv`, `feisty.png`).
+
 ## Global configuration
 `global.toml` runs the whole ocean: real coastlines (needs `pip install global-land-mask`), depth built from
 distance offshore, seasons out of phase between hemispheres, and a wind-driven circulation with subtropical
@@ -258,7 +297,13 @@ See `ROADMAP.md` for the development plan toward a research model and what is do
   product for published work. `make_test_forcing.py` writes invented data in real CMEMS packaging, for
   testing the reader without an account. Note the reader has not yet been run against real
   GLORYS files. Currents are projected onto their non-divergent part, which keeps about 77% of the mean
-  speed; narrow boundary currents are smoothed unless the grid resolves them.
+  speed; narrow boundary currents are smoothed unless the grid resolves them. The projection removes the
+  divergence that drives upwelling, so it is diagnosed from the currents before it: w(z) = integral of
+  div_H(u) from the surface, smoothed over neighbours (`upwell_smooth`). Where water rises it is exchanged
+  across each level boundary at rate w (`ocean.upwelling_from_w`, default on), which brings the model's own
+  deep nutrients up in the Humboldt, Benguela, California and equatorial upwellings without an outside source.
+  `w` in fields.nc is this vertical velocity. On the 2-degree global grid w through 100 m averages ~0.3 m/d over
+  the equatorial Pacific and ~0.15 m/d over the eastern boundary upwellings (box means).
 
 ## Ensembles
 `[ensemble.sweep]` accepts any namelist key (`npzd.mu_max`), species parameter (`species.cod.K_nursery`,
@@ -276,6 +321,12 @@ Garcia-Gordon solubility, `ocean.wind_speed`) and resupplied at the sea bed (`np
 Ocean Atlas field with `npzd.O2_init = "woa"`).
 Remineralisation itself slows as oxygen runs out (`npzd.kO2_remin`).
 
+The NPZD carries nitrogen only. `npzd.iron_limitation = "hnlc"` stands in for iron: phytoplankton growth is
+multiplied by `iron_factor` (0.5) in the Southern Ocean (south of ~45 S), the subarctic North Pacific and the
+eastern equatorial Pacific, with edges smoothed over `iron_edge_deg` and shelves shallower than `iron_shelf_m`
+(500 m, iron from sediments) exempt. It is an empirical mask, not an iron cycle; it is there to stop these
+high-nutrient, low-chlorophyll regions blooming as if they were nitrogen-limited.
+
 Each species has a metabolic index, phi(O2, T, W): oxygen supply over resting demand. Below `phi_crit` the
 aerobic scope for feeding shrinks, and below phi = 1 fish suffocate (`m_hypoxia`), a new cause of death.
 Warming, growth and deoxygenation all push phi down, so the model reproduces metabolic habitat squeeze.
@@ -292,14 +343,25 @@ transport a migrating fish performs). These go to `series.nc` and the `biogeoche
   prey/predator length window; fish prey are gape-limited (ratio <= 0.8). `fish_diet` keys name species
   loosely (`warm_sardine`, `"warm sardine"` and `Warm-Sardine` are the same species), as do the
   `species.<name>.*` paths used by ensembles and calibration; a key matching no species in the run is
-  listed in the startup banner rather than silently dropped.
+  listed in the startup banner rather than silently dropped. With `npzd.fish_refuge` (mmol N m-3) fish find only
+  C / (C + fish_refuge) of the phyto-, zoo- and krill present, so their plankton intake falls with the square of
+  a thin plankton field (Holling type III): grazed-down plankton keeps a refuge instead of being eaten to nothing,
+  which damps the boom-and-bust of forage fish.
 - Feeding on plankton stops with size: above `plankton_L_max` (cm, smooth cut-off) a species eats only fish
-  and the benthos proxy, so big predators depend on forage fish instead of grazing copepods. With
-  `npzd.detritus_food = "bed_flux"` the benthos proxy (detritus) is available only on the sea bed and only as
-  much as sinks onto it each step.
-- Juveniles in biomass cells carry `hybrid.juvenile_bins` progress bins toward maturity. With one bin a fixed
-  fraction matures each step whatever its age, so some fish mature almost at once (and generation counts
-  inflate); K bins give an Erlang-K time to maturity with the same mean.
+  and the benthos, so big predators depend on forage fish instead of grazing copepods.
+- Benthos (the `detritus` diet item): with `npzd.detritus_food = "benthos"` it is a benthic fauna pool on each
+  column's sea bed. A share `benthos_eff` (0.1, as in FEISTY) of the detritus reaching the bed becomes benthos;
+  it loses `benthos_loss` per day (respiration and death, returned to nutrients in the bed cell, using oxygen),
+  plus an optional logistic term with `benthos_K` (g m-2); demersal fish eat it. Output as `benthos` in fields.nc
+  and series.nc. The older options let fish eat detritus itself: `"bed"` (in sea-bed cells), `"bed_flux"`
+  (only what sinks onto the bed each step) and `"pool"` (anywhere).
+- Juveniles in biomass cells carry `hybrid.juvenile_bins` progress bins toward maturity, and larvae
+  `hybrid.larva_bins` toward the juvenile length. With one bin a fixed fraction moves on each step whatever its
+  age, so some fish mature almost at once (and generation counts inflate); K bins give an Erlang-K stage
+  duration with the same mean. With `hybrid.promote_at_size` (default on) the fish that move on are taken to be
+  the class's biggest: they leave at the next stage's entry size (W at L_juv, or at L_mat), as far as the class
+  can pay for it while those left behind keep at least their own stage's entry size, instead of carrying the
+  class mean (and stunted fish) into the next stage.
 - Mortality: size-dependent natural, larval, thermal stress, fishing (logistic selectivity),
   predation, starvation, senescence; larval and juvenile mortality rises with same-stage density
   (`K_nursery`, g m-2), and that crowding penalty fades with length as exp(-L / `crowd_length`)

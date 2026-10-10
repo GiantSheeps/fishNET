@@ -13,6 +13,15 @@ const STAGE_COLORS = () => {                     // one hue, light -> dark: an o
   return dark ? ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab"] : ["#9ec5f4", "#5598e7", "#2a78d6", "#184f95"];
 };
 const CAUSE_COLORS = () => SERIES_COLORS();
+/* Eight validated hues, then composite encoding: the 9th-16th series reuse the hues with a dashed line, the
+   17th-24th dotted, and so on, so a hue is never cycled bare. A style follows its entity (species index or
+   group order), never its rank on screen. */
+const DASHES = ["", "6 3", "1.5 3", "8 3 2 3", "3 2 1 2"];
+const styleOf = k => ({ color: SERIES_COLORS()[k % 8], dash: DASHES[Math.floor(k / 8) % DASHES.length] });
+/* Legend/list glyph: a dot for solid series, a short line sample for dashed ones (the dash is the identity). */
+const glyph = (st, cls = "dot") => st.dash
+  ? `<svg class="glyph" width="16" height="8" aria-hidden="true"><line x1="1" y1="4" x2="15" y2="4" stroke="${st.color}" stroke-width="2.4" stroke-dasharray="${st.dash}" stroke-linecap="butt"/></svg>`
+  : `<i class="${cls}" style="background:${st.color}"></i>`;
 
 // field variables offered on the map
 const FIELDS = [
@@ -28,7 +37,8 @@ const FIELDS = [
   { key: "O2", label: "oxygen (mmol O₂ m⁻³)", depth: 1, log: 0, cmap: "blues" },
   { key: "par", label: "PAR (W m⁻²)", depth: 1, log: 0, cmap: "inferno" },
   { key: "speed", label: "current speed (m s⁻¹)", depth: 1, log: 0, cmap: "viridis" },
-  { key: "w", label: "vertical velocity (m s⁻¹)", depth: 1, log: 0, cmap: "thermal" },
+  { key: "w", label: "vertical velocity (m d⁻¹, up +)", depth: 1, log: 0, cmap: "thermal" },
+  { key: "benthos", label: "benthic fauna (g m⁻²)", log: 1, cmap: "inferno" },
   { key: "trait_mean", label: "mean breeding value", species: 1, trait: 1, log: 0, cmap: "thermal" },
   { key: "ibm", label: "IBM cells", log: 0, cmap: "blues" },
   { key: "bottom_depth", label: "bottom depth (m)", log: 0, cmap: "blues" }
@@ -44,7 +54,7 @@ const S = {
 const TAB_VARS = {                                   // biomass/agents are always fetched: they feed the header tiles
   map: "",
   pops: "numbers,eggs,catch,losses",
-  eco: "plankton,oxygen,o2_min,export_sinking,export_fish,export_respired,metabolic_index,ibm_cells,budget_error,behavior",
+  eco: "plankton,benthos,oxygen,o2_min,export_sinking,export_fish,export_respired,metabolic_index,ibm_cells,budget_error,behavior",
   traits: "trait_mean,trait_sd,max_gen,fst",
   figs: "",
   val: ""
@@ -80,9 +90,16 @@ const groupOf = q => {
   return (S.speciesGroups && sp && S.speciesGroups[sp]) || g || "other";
 };
 
-function groupList() {                      // groups in the order their first species appears
-  const seen = [];
-  shown().forEach(q => { const g = groupOf(q); if (!seen.includes(g)) seen.push(g); });
+const FEISTY_NAMES = { forage: "forage fish", mesopelagic: "mesopelagic fish", large_pelagic: "large pelagics",
+                       midwater_predator: "midwater predators", demersal: "demersal fish", none: "not in FEISTY" };
+const feistyOf = q => ((S.meta && S.meta.feisty) || [])[q] || "none";
+const bucketOf = q => S.groupMode === "feisty" ? feistyOf(q) : groupOf(q);
+
+function groupList() {                      // groups in the order their first species appears (all species, so a
+  const seen = [];                          // group keeps its style while the filter changes)
+  for (let q = 0; q < spCount(); q++) { const g = bucketOf(q); if (!seen.includes(g)) seen.push(g); }
+  if (S.groupMode === "feisty")             // FEISTY's own order, with what it leaves out last
+    seen.sort((a, b) => Object.keys(FEISTY_NAMES).indexOf(a) - Object.keys(FEISTY_NAMES).indexOf(b));
   return seen;
 }
 
@@ -90,17 +107,19 @@ function groupList() {                      // groups in the order their first s
 function buckets() {
   const cols = SERIES_COLORS(), vis = shown();
   if (S.groupMode === "total")
-    return vis.length ? [{ name: "all species", color: cols[0], members: vis }] : [];
-  if (S.groupMode === "group")
-    return groupList().map((g, i) => ({ name: g.replace(/_/g, " "), color: cols[i % 8],
-                                        members: vis.filter(q => groupOf(q) === g) }));
-  return vis.map(q => ({ name: S.meta.species[q], color: cols[q % 8], members: [q] }));
+    return vis.length ? [{ name: "all species", color: cols[0], dash: "", members: vis }] : [];
+  if (S.groupMode === "group" || S.groupMode === "feisty")
+    return groupList().map((g, i) => ({ name: S.groupMode === "feisty" ? FEISTY_NAMES[g] || g : g.replace(/_/g, " "),
+                                        ...styleOf(i), members: vis.filter(q => bucketOf(q) === g) }))
+                      .filter(b => b.members.length);
+  return vis.map(q => ({ name: S.meta.species[q], ...styleOf(q), members: [q] }));
 }
 
-/* Per-species dot colour matching the map legend (same buckets); hidden species get none. */
+/* Per-species dot style matching the map legend (same buckets); hidden species get none. Dashed buckets
+   (the 9th and later) are drawn as rings so they stay distinct from the solid dot of the same hue. */
 function agentColors() {
   const c = new Array(spCount()).fill(null);
-  buckets().forEach(b => b.members.forEach(q => { c[q] = b.color; }));
+  buckets().forEach(b => b.members.forEach(q => { c[q] = { color: b.color, ring: !!b.dash }; }));
   return c;
 }
 
@@ -111,7 +130,7 @@ function seriesFor(varName, pick, transform) {
   if (!v || !S.meta) return [];
   const get = pick || ((row, q) => row[q]);
   return buckets().map(b => ({
-    name: b.name, color: b.color,
+    name: b.name, color: b.color, dash: b.dash,
     y: v.map(row => {
       let t = 0;
       for (const q of b.members) { const x = get(row, q); if (isFinite(x)) t += x; }
@@ -121,18 +140,20 @@ function seriesFor(varName, pick, transform) {
 }
 
 /* Means, not sums, for intensive quantities (a rate or an index cannot be added up). */
-function meanSeriesFor(varName, pick) {
+function meanSeriesFor(varName, pick, skip) {
   const v = S.series.vars && S.series.vars[varName];
   if (!v || !S.meta) return [];
   const get = pick || ((row, q) => row[q]);
-  return buckets().map(b => ({
-    name: b.name, color: b.color,
-    y: v.map(row => {
-      let t = 0, n = 0;
-      for (const q of b.members) { const x = get(row, q); if (isFinite(x)) { t += x; n++; } }
-      return n ? t / n : NaN;
-    })
-  }));
+  return buckets().map(b => ({ ...b, members: b.members.filter(q => !(skip && skip(q))) }))
+    .filter(b => b.members.length)
+    .map(b => ({
+      name: b.name, color: b.color, dash: b.dash,
+      y: v.map(row => {
+        let t = 0, n = 0;
+        for (const q of b.members) { const x = get(row, q); if (isFinite(x)) { t += x; n++; } }
+        return n ? t / n : NaN;
+      })
+    }));
 }
 const keyOf = (sp, t) => `${sp.var}|${sp.species}|${sp.stage}|${sp.depth}|${sp.trait}|${t}`;
 
@@ -221,7 +242,7 @@ function renderLog(status) {
       names.map(n => {
         const i = all.indexOf(n);
         const s = status.species[n], adult = s.stages && s.stages.length === 4 ? (s.stages[3] * 100).toFixed(0) + "%" : "—";
-        return `<div class="sn-row"><span><i class="dot" style="background:${SERIES_COLORS()[i % 8]}"></i>${n}</span>` +
+        return `<div class="sn-row"><span>${glyph(styleOf(i))}${n}</span>` +
                `<span>${mass(s.biomass_t)}</span><span>${adult}</span><span>${s.agents.toLocaleString()}</span></div>`;
       }).join("")
     : "";
@@ -282,7 +303,7 @@ async function loadNamelist() {
     }
     for (const { s, i } of items) {
       listHtml += `<div class="species-row">
-         <span><i class="dot" style="background:${cols[i % 8]}"></i>${s.name}</span>
+         <span>${glyph(styleOf(i))}${s.name}</span>
          <input type="number" step="0.1" min="0" data-sp="${i}" data-key="biomass" value="${s.biomass ?? 1}">
          <input type="number" step="0.05" min="0" data-sp="${i}" data-key="fishing_F" value="${s.fishing_F ?? 0}">
        </div>`;
@@ -389,7 +410,7 @@ function renderFilter() {
   if (!sp.length) { $("spFilter").innerHTML = ""; $("spCount").textContent = ""; return; }
   const byGroup = new Map();
   sp.forEach((n, q) => {
-    const g = groupOf(q);
+    const g = S.groupMode === "feisty" ? FEISTY_NAMES[feistyOf(q)] || feistyOf(q) : groupOf(q);
     if (!byGroup.has(g)) byGroup.set(g, []);
     byGroup.get(g).push(q);
   });
@@ -398,7 +419,8 @@ function renderFilter() {
     (single ? "" : `<div class="grp">${g.replace(/_/g, " ")}</div>`) +
     qs.map(q => `<label title="${sp[q]}">
         <input type="checkbox" data-sp="${q}" ${S.hidden.has(q) ? "" : "checked"}>
-        <i class="dot" style="background:${cols[q % 8]}"></i>${sp[q]}</label>`).join("")
+        ${glyph(styleOf(q))}${sp[q]}${(m.individual || [])[q]
+          ? ` <span class="tag" title="always individuals: agents everywhere, never biomass">ind.</span>` : ""}</label>`).join("")
   ).join("");
   $("spCount").textContent = `${shown().length} of ${sp.length}`;
   $("spFilter").querySelectorAll("input").forEach(inp => inp.onchange = () => {
@@ -424,10 +446,11 @@ function refreshSpeciesSelects() {
     vis.map(q => `<option value="${q}">${sp[q]}</option>`).join("");
   $("popSpecies").innerHTML = vis.map(q => `<option value="${q}">${sp[q]}</option>`).join("");
   // keep the previous choice when it is still visible, else fall back
-  $("spSelect").value = (keepSp === "-1" || vis.includes(+keepSp)) ? keepSp : "-1";
-  $("popSpecies").value = vis.includes(+keepPop) ? keepPop : (vis.length ? String(vis[0]) : "");
+  // ("" is the value before any option existed, and +"" is 0, so it must not count as species 0)
+  $("spSelect").value = (keepSp === "-1" || (keepSp !== "" && vis.includes(+keepSp))) ? keepSp : "-1";
+  $("popSpecies").value = (keepPop !== "" && vis.includes(+keepPop)) ? keepPop : (vis.length ? String(vis[0]) : "");
   $("spLegend").innerHTML = buckets().map(b =>
-    `<div class="row"><i class="dot" style="background:${b.color}"></i>${b.name}</div>`).join("");
+    `<div class="row">${b.dash ? glyph(b) : `<i class="dot" style="background:${b.color}"></i>`}${b.name}</div>`).join("");
 }
 
 /* The map's field list follows what fields.nc holds. It is rebuilt whenever the run's metadata is reloaded,
@@ -635,7 +658,7 @@ function maxSeriesFor(varName) {
   const v = S.series.vars && S.series.vars[varName];
   if (!v || !S.meta) return [];
   return buckets().map(b => ({
-    name: b.name, color: b.color,
+    name: b.name, color: b.color, dash: b.dash,
     y: v.map(row => Math.max(...b.members.map(q => row[q]).filter(isFinite)))
   }));
 }
@@ -665,7 +688,10 @@ function renderCharts() {
                     .filter((s, k) => causes[k] !== "alive" && s.y.some(v => v > 0)) });
   } else if (S.tab === "eco") {
     const cols = SERIES_COLORS();
-    Charts.draw($("chNPZD"), { x, now, log: true, series: ["N", "P", "Z", "K", "D"].map((n, k) => ({ name: n, color: cols[k], y: S.series.vars.plankton.map(r => r[k]) })) });
+    const npzd = ["N", "P", "Z", "K", "D"].map((n, k) => ({ name: n, color: cols[k], y: S.series.vars.plankton.map(r => r[k]) }));
+    if (S.series.vars.benthos && S.series.vars.benthos.some(v => v > 0))      // benthic fauna pool, g -> mmol N
+      npzd.push({ name: "benthos", color: cols[5], y: S.series.vars.benthos.map(v => v * 1.8) });
+    Charts.draw($("chNPZD"), { x, now, log: true, series: npzd });
     Charts.draw($("chO2"), { x, now, series: [
       { name: "domain minimum", color: cols[0], y: S.series.vars.o2_min },
     ] });
@@ -673,7 +699,9 @@ function renderCharts() {
       { name: "sinking", color: cols[0], y: S.series.vars.export_sinking },
       { name: "fish faeces/carcasses", color: cols[1], y: S.series.vars.export_fish },
       { name: "fish respiration", color: cols[2], y: S.series.vars.export_respired }] });
-    Charts.draw($("chPhi"), { x, now, series: speciesSeries("metabolic_index") });
+    // air breathers (whales, dolphins) have no metabolic index: leave them out rather than plot a constant
+    Charts.draw($("chPhi"), { x, now, series: meanSeriesFor("metabolic_index", null, q => (S.meta.air_breathing || [])[q]),
+                              emptyMsg: "only air-breathing species shown" });
     Charts.draw($("chIbm"), { x, now, series: [{ name: "IBM cells", color: cols[0], y: S.series.vars.ibm_cells }] });
     Charts.draw($("chBudget"), { x, now, zeroLine: true, series: [{ name: "N budget error", color: cols[7], y: S.series.vars.budget_error }] });
     const q = +$("popSpecies").value || 0;
@@ -693,7 +721,7 @@ function renderCharts() {
         });
         const y = avg(tm, (r, q) => r[q][k] - tm[0][q][k]);
         const sd = ts ? avg(ts, (r, q) => r[q][k]) : null;
-        return { name: b.name, color: b.color, y,
+        return { name: b.name, color: b.color, dash: b.dash, y,
                  band: sd ? [y.map((v, i) => v - sd[i]), y.map((v, i) => v + sd[i])] : null };
       }) });
     Charts.draw($("chGen"), { x, now, series: speciesSeries("max_gen") });
@@ -705,12 +733,15 @@ function renderMapCharts() {
   if (!S.series.time || !S.meta) return;
   const x = S.series.time;
   const now = timeline().length ? timeline()[Math.min(S.idx, timeline().length - 1)] : null;
+  // the small charts under the map drop their legend past 10 series: the map's legend names them, and the
+  // tooltip does too, while a 39-row legend would leave no room for the plot
+  const legend = buckets().length <= 10;
   if (S.series.vars.biomass) {
-    Charts.draw($("miniBiomass"), { x, now, log: true, unit: "t",
+    Charts.draw($("miniBiomass"), { x, now, log: true, unit: "t", legend, emptyMsg: shown().length ? "no data yet" : "no species shown",
       series: seriesFor("biomass", (row, q) => row[q].reduce((a, b) => a + b, 0), v => v / 1e6) });
   }
   if (S.series.vars.agents) {
-    Charts.draw($("miniAgents"), { x, now, series: seriesFor("agents") });
+    Charts.draw($("miniAgents"), { x, now, legend, series: seriesFor("agents"), emptyMsg: shown().length ? "no data yet" : "no species shown" });
   }
 }
 
@@ -767,7 +798,7 @@ on("followLive", "change", e => { S.follow = e.target.checked; if (S.follow && S
   on(id, "change", () => { syncVarControls(); drawMap(); }));
 
 // ---- species filter + aggregation controls ----
-on("groupMode", "change", () => { S.groupMode = $("groupMode").value; afterFilterChange(); });
+on("groupMode", "change", () => { S.groupMode = $("groupMode").value; renderFilter(); afterFilterChange(); });
 const setAll = hide => { S.hidden = hide ? new Set(Array.from({ length: spCount() }, (_, q) => q)) : new Set();
                          renderFilter(); afterFilterChange(); };
 on("spAll", "click", () => setAll(false));
@@ -794,7 +825,7 @@ on("themeBtn", "click", () => {
 });
 on("figBtn", "click", async () => {
   $("figStatus").textContent = "running plot.py…";
-  await post("figures", { run: S.run, no_anim: !$("figAnim").checked });
+  await post("figures", { run: S.run, no_anim: !$("figAnim").checked, feisty: $("figFeisty").checked });
   setTimeout(() => { $("figStatus").textContent = "figures appear as plot.py finishes each one"; }, 1500);
 });
 $("tabs").addEventListener("click", e => {

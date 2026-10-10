@@ -1,6 +1,7 @@
 # Atlantic bluefin (Thunnus thynnus) - endothermic, high-latitude forager
 name = "bluefin_atlantic"
 group = "large_pelagic"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#8b1a1a"
 length_weight = [0.02, 2.95]
 L_inf = 300.0
@@ -36,7 +37,7 @@ prey_size_sd = 1.0
 diet = { zoo = 0.15 }
 plankton_L_max = 60.0   # cm: krill-type prey until then (2026-09-26, after two 240-day checks); starved at 30-40
 larva_diet = { zoo = 1.0 }
-fish_diet = { squid = 0.7, herring = 1.0, sardine_eu = 0.8, capelin = 0.6, lanternfish = 0.4, anchovy = 0.6, sardinella = 0.3 }
+fish_diet = { shortfin_squid = 0.7, herring = 1.0, sardine_eu = 0.8, capelin = 0.6, lanternfish = 0.4, anchovy = 0.6, sardinella = 0.3 }
 
 [traits]                          # [mean, phenotypic sd, heritability]
 T_opt = [18.0, 2.0, 0.4]

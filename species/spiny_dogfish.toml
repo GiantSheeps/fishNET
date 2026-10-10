@@ -1,0 +1,61 @@
+# Spiny dogfish (Squalus acanthias and S. suckleyi) - schooling demersal shark of temperate shelves
+# Size: TL to ~1.1 m, ~4.5 kg at 1 m (W = 0.0018 L^3.2); pups ~25 cm, ~55 g; females mature at ~80 cm.
+# Life history: 40+ yr, 22-month gestation, ~6 pups every 2 yr (ICES WGEF); among the slowest-growing sharks.
+# Biomass: RAM Legacy (NW and NE Atlantic, N Pacific stocks).
+name = "spiny_dogfish"
+group = "sharks"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#9edae5"
+live_bearing = true   # the egg stage is a fetus/newborn: nothing eats it as plankton
+egg_cannibalism = 0.0
+length_weight = [0.0018, 3.2]
+L_inf = 110.0
+L_juv = 27.0
+lifespan_days = 14600
+egg_days = 2.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 9.0
+cmax = 0.16
+alpha = 0.78
+K_food = 0.03
+f_crit = 0.2
+c_swim = 0.25
+reserve_max = 0.35
+kappa_R = 0.4
+gonad_frac = 0.08
+spawn_doy = [300, 120]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0017
+m_early = 0.0015
+K_nursery = 0.3
+K_adult = 3.0
+m_thermal = 0.03
+fishing_L50_L95 = [60.0, 80.0]
+lat_sectors = ["n_temperate", "n_polar", "s_temperate"]   # starting distribution only: animals may move anywhere afterwards
+depth_range = [10, 600]   # m (clipped to the model's deepest level)
+demersal = true
+bottom_max_m = 900.0
+A_o = 0.6   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 1.8
+m_hypoxia = 0.12
+larva_depth_max = 200
+prey_size_ratio = 0.15
+prey_size_sd = 1.5
+plankton_L_max = 40.0   # cm: bigger animals no longer eat plankton
+diet = { zoo = 0.2, krill = 0.5, detritus = 0.5 }
+larva_diet = { zoo = 0.5, krill = 0.8 }
+fish_diet = { herring = 0.8, capelin = 0.5, sardine_eu = 0.5, anchovy = 0.4, hake = 0.4, cod_atlantic = 0.3, flounder = 0.3, pollock = 0.3, shortfin_squid = 0.6, flying_squid = 0.4 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [9.0, 1.5, 0.4]
+T_width = [5.0, 0.5, 0.3]
+speed = [0.5, 0.06, 0.3]
+metab = [0.8, 0.1, 0.3]
+L_mat = [80.0, 4.8, 0.4]
+egg_mass = [55.0, 6.6, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [4.0, 1.0, 0.3]
+w_risk = [-2.0, 1.0, 0.3]
+w_crowd = [1.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [2.5, 0.5, 0.3]
+w_shelf = [2.5, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

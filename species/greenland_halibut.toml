@@ -1,6 +1,7 @@
 # Reinhardtius hippoglossoides - deep cold slope flatfish
 name = "greenland_halibut"
 group = "benthic"   # dashboard grouping only; the model ignores it
+feisty = "demersal"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
 color = "#a0706b"
 length_weight = [0.0095, 3.15]
 L_inf = 110.0

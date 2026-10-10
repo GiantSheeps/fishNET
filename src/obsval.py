@@ -31,7 +31,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "observations"
 CACHE = OBS / "processed" / "validation_products.json"
-VERSION = 6
+VERSION = 7
 OBS_YEARS = (1993, 2021)                    # the GLORYS years the climatology forcing is built from
 R_EARTH = 6.371e6
 
@@ -50,8 +50,17 @@ SPECIES = {
     "polar_cod": ["Boreogadus saida"], "silverfish": ["Pleuragramma antarcticum", "Pleuragramma antarctica"],
     "toothfish": ["Dissostichus mawsoni"],
     "sardinella": ["Sardinella longiceps"], "anchovy": ["Engraulis encrasicolus"],
-    "squid": ["Dosidicus gigas", "Illex illecebrosus"], "shark": ["Prionace glauca"],
-    "whale": ["Balaenoptera acutorostrata"], "dolphin": ["Delphinus delphis"],
+    "jumbo_squid": ["Dosidicus gigas"], "flying_squid": ["Todarodes pacificus"],
+    "shortfin_squid": ["Illex argentinus", "Illex illecebrosus"],
+    "blue_shark": ["Prionace glauca"], "shortfin_mako": ["Isurus oxyrinchus"],
+    "spiny_dogfish": ["Squalus acanthias", "Squalus suckleyi"],
+    "blue_whale": ["Balaenoptera musculus"], "fin_whale": ["Balaenoptera physalus"],
+    "humpback_whale": ["Megaptera novaeangliae"], "minke_whale": ["Balaenoptera acutorostrata", "Balaenoptera bonaerensis"],
+    "sperm_whale": ["Physeter macrocephalus"], "killer_whale": ["Orcinus orca"],
+    "common_dolphin": ["Delphinus delphis"], "bottlenose_dolphin": ["Tursiops truncatus"],
+    # the old lumped categories, kept so archived configs still find a starting biomass; their scientific names
+    # now belong to the representative species above
+    "squid": [], "shark": [], "whale": [], "dolphin": [],
 }
 # Model species that stand for a whole genus or family. OBIS is read at that level (grid3_<taxon>.geojson,
 # fetched by observations/fetch_observations.py), and RAM stocks of the genus/family count toward them,
@@ -82,6 +91,37 @@ LITERATURE = {
     "silverfish": dict(biomass_t=5.92e5, low_t=3.26e5, high_t=8.66e5, coverage="Ross Sea shelf only (lower bound)",
         source="Acoustic survey of the western Ross Sea shelf, Feb-Mar 2008: 592 kt, 95% CI 326-866 kt "
                "(O'Driscoll et al. 2011, Deep-Sea Res. II 58:181)."),
+    # Representative cephalopods, sharks and cetaceans (replacing the lumped squid/shark/whale/dolphin below).
+    # Cetacean biomass is abundance x a population-mean body mass (calves included), so it carries both errors.
+    "jumbo_squid": dict(biomass_t=2.0e6, low_t=5e5, high_t=5e6, coverage="eastern Pacific, derived",
+        source="IMARPE acoustic surveys off Peru, 1999-2015: 0.1-1.7 Mt, usually 0.5-0.8 Mt in summer (Inf. Inst. Mar "
+               "Peru 43(1)); the species also ranges off Chile, Mexico and offshore, and its fishery lands 0.5-1 Mt a "
+               "year, so ~2 Mt over the whole range."),
+    "shortfin_squid": dict(biomass_t=1.5e6, low_t=7.4e5, high_t=1.8e6, coverage="SW Atlantic Illex argentinus",
+        source="Illex argentinus 1.32-1.80 Mt from an environmentally dependent surplus-production assessment; B_MSY "
+               "~0.74 Mt in other assessments (fisheryprogress.org stock assessment review). I. illecebrosus is small "
+               "beside it (NW Atlantic catches ~10-25 kt)."),
+    "shortfin_mako": dict(biomass_t=1.5e5, low_t=5e4, high_t=3e5, coverage="global, derived",
+        source="No assessed total biomass. N Atlantic catches 3.6-4.75 kt/yr while overfished (ICCAT SCRS 2017, "
+               "B2015/BMSY 0.57-0.85); other oceans land about as much again; at F ~0.1-0.15 (RAM N Pacific) that "
+               "implies ~0.1-0.2 Mt."),
+    "blue_whale": dict(biomass_t=1.2e6, low_t=7e5, high_t=2.25e6, coverage="global",
+        source="10,000-25,000 animals (IUCN Red List 2018; Antarctic >2,000, Branch et al. 2007) x ~80 t mean mass."),
+    "fin_whale": dict(biomass_t=5.0e6, low_t=3.5e6, high_t=7e6, coverage="global",
+        source="~100,000 animals (IUCN Red List 2018) x ~50 t mean mass."),
+    "humpback_whale": dict(biomass_t=3.8e6, low_t=2.5e6, high_t=4.5e6, coverage="global",
+        source="~135,000 animals (IUCN Red List 2018) x ~28 t mean mass."),
+    "minke_whale": dict(biomass_t=4.3e6, low_t=2.5e6, high_t=6e6, coverage="global",
+        source="Antarctic minke ~515,000 (IWC 2012 circumpolar surveys) plus common minke ~200,000, x ~6 t mean mass."),
+    "sperm_whale": dict(biomass_t=7.2e6, low_t=3e6, high_t=1.5e7, coverage="global",
+        source="~360,000 animals (Whitehead 2002, Mar. Ecol. Prog. Ser. 242:295) x ~20 t mean mass (females ~15 t, "
+               "males ~45 t)."),
+    "killer_whale": dict(biomass_t=1.75e5, low_t=1.5e5, high_t=5e5, coverage="global, minimum",
+        source="At least 50,000 animals (Forney & Wade 2006, in Whales, Whaling and Ocean Ecosystems) x ~3.5 t."),
+    "common_dolphin": dict(biomass_t=4.8e5, low_t=3e5, high_t=8e5, coverage="global",
+        source="~6 million animals, the most abundant cetacean (NAMMCO; Hammond et al. 2008) x ~80 kg."),
+    "bottlenose_dolphin": dict(biomass_t=1.4e5, low_t=1e5, high_t=3e5, coverage="global, minimum",
+        source="At least 600,000 animals (NAMMCO; Wells & Scott 2009) x ~230 kg."),
     "squid": dict(biomass_t=1.5e7, low_t=1e7, high_t=3e7, coverage="global",
         source="Global cephalopod biomass estimates (Rodhouse et al. 2014; Hunsicker et al. 2010)."),
     "shark": dict(biomass_t=3.0e6, low_t=1.5e6, high_t=6e6, coverage="global",
@@ -285,7 +325,7 @@ def products(rebuild=False):
             pass
     t0 = time.time()
     d = dict(version=VERSION, years=list(OBS_YEARS), built=time.strftime("%Y-%m-%d %H:%M"),
-             species={k: (f"{TAXA[k][1]} ({TAXA[k][0]})" if k in TAXA else v[0]) for k, v in SPECIES.items()},
+             species={k: (f"{TAXA[k][1]} ({TAXA[k][0]})" if k in TAXA else v[0]) for k, v in SPECIES.items() if v},
              obis=build_obis(), ram=build_ram(), iccat=build_iccat())
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     CACHE.write_text(json.dumps(d))

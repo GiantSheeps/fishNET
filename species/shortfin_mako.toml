@@ -1,0 +1,59 @@
+# Shortfin mako (Isurus oxyrinchus) - fast lamnid predator of tunas, swordfish and squid
+# Size: FL to ~3.2 m, ~180 kg at 2.5 m (W = 0.00524 L^3.14); pups ~70 cm, ~3 kg; females mature at ~2.8 m.
+# Life history: ~30 yr, litters of ~12 every 3 yr (Mollet et al. 2000); M ~0.1/yr.
+# Biomass: no assessed total; derived from catches (N Atlantic 3.6-4.75 kt/yr, ICCAT 2017) and F ~0.1-0.15.
+name = "shortfin_mako"
+group = "sharks"   # dashboard grouping only; the model ignores it
+feisty = "large_pelagic"   # FEISTY functional type for src/feisty_compare.py (none = not represented in FEISTY)
+color = "#1f77b4"
+live_bearing = true   # the egg stage is a fetus/newborn: nothing eats it as plankton
+egg_cannibalism = 0.0
+length_weight = [0.00524, 3.14]
+L_inf = 320.0
+L_juv = 75.0
+lifespan_days = 11000
+egg_days = 2.0   # days from birth to the first feeding stage (gestation is paid through the gonad)
+T_ref = 18.0
+cmax = 0.18
+alpha = 0.78
+K_food = 0.03
+f_crit = 0.2
+c_swim = 0.4
+reserve_max = 0.35
+kappa_R = 0.4
+gonad_frac = 0.15
+spawn_doy = [60, 240]   # day-of-year window (wraps through New Year if start > end)
+m0 = 0.0041
+m_early = 0.0008
+K_nursery = 0.3
+K_adult = 1.0
+m_thermal = 0.03
+fishing_L50_L95 = [150.0, 220.0]
+lat_sectors = ["tropical", "n_temperate", "s_temperate"]   # starting distribution only: animals may move anywhere afterwards
+depth_range = [0, 500]   # m (clipped to the model's deepest level)
+A_o = 0.5   # metabolic index: oxygen supply per kPa (higher = more hypoxia tolerant)
+phi_crit = 2.0
+m_hypoxia = 0.2
+larva_depth_max = 100
+prey_size_ratio = 0.2
+prey_size_sd = 1.5
+plankton_L_max = 40.0   # cm: bigger animals no longer eat plankton
+diet = {}
+larva_diet = {}
+fish_diet = { skipjack = 0.8, swordfish = 0.6, albacore = 0.6, yellowfin = 0.5, bluefin_atlantic = 0.3, blue_shark = 0.3, flying_squid = 0.6, shortfin_squid = 0.6, jumbo_squid = 0.5, herring = 0.5, sardine_eu = 0.5, sardine_pacific = 0.5, anchovy = 0.4, hake = 0.4 }
+
+[traits]                          # [mean, phenotypic sd, heritability]
+T_opt = [18.0, 1.5, 0.4]
+T_width = [6.0, 0.6, 0.3]
+speed = [1.5, 0.18, 0.3]
+metab = [1.0, 0.1, 0.3]
+L_mat = [275.0, 16.5, 0.4]
+egg_mass = [3300.0, 396.0, 0.3]
+w_therm = [3.0, 1.0, 0.3]
+w_food = [5.0, 1.0, 0.3]
+w_risk = [-0.3, 1.0, 0.3]
+w_crowd = [0.0, 0.5, 0.3]
+w_light = [-0.5, 0.5, 0.3]
+w_home = [2.0, 0.5, 0.3]
+w_shelf = [-0.5, 0.5, 0.3]
+spawn_shift = [0.0, 8.0, 0.3]

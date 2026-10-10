@@ -22,6 +22,42 @@ def load(run):
     return F, S, A, L, meta
 
 
+def species_grid(n, w=4.2, h=3.4, ncol=6, **kw):
+    """One panel per species, wrapped into rows of `ncol` (a single row of 39 panels is unreadable).
+    Returns the figure and the flat list of axes; panels beyond n are switched off."""
+    nc = max(1, min(n, ncol))
+    nr = -(-n // nc)
+    fig, ax = plt.subplots(nr, nc, figsize=(w * nc, h * nr), squeeze=False, **kw)
+    for a in ax.flat[n:]:
+        a.axis("off")
+    return fig, list(ax.flat)
+
+
+def species_legend(ax, n, **kw):
+    """A legend that stays readable with many species: outside the panel, two columns, past 10 entries."""
+    if n > 10:
+        ax.legend(fontsize=6, ncol=2, loc="upper left", bbox_to_anchor=(1.01, 1.0), **kw)
+    else:
+        ax.legend(fontsize=7, **kw)
+
+
+def log_range(x, vmin=-2):
+    """(vmin, vmax) for a log10 field: vmax always above vmin, so a species too sparse to reach the floor
+    (a few whales on a global grid) still plots instead of raising."""
+    hi = float(np.nanmax(x)) if np.isfinite(x).any() else vmin + 1
+    return vmin, max(hi, vmin + 1)
+
+
+def species_flags(F, key):
+    """A per-species switch from the run's resolved config (fields.nc `config`), False when absent."""
+    import ast
+    try:
+        spec = {s.get("name"): s for s in ast.literal_eval(F.attrs.get("config", "{}")).get("species", [])}
+    except (ValueError, SyntaxError):
+        spec = {}
+    return [bool(spec.get(n, {}).get(key, False)) for n in F.attrs.get("species", "").split(",")]
+
+
 def mapax(ax, F, field, title, cmap="viridis", **kw):
     cm = plt.get_cmap(cmap).copy()
     cm.set_bad("0.75")
@@ -41,13 +77,15 @@ def timeseries(F, S, M, out):
         ax[0, 1].plot(t, S.agents[:, q], color=col[q])
         ax[0, 2].semilogy(t, np.maximum(S.eggs[:, q], 1), color=col[q])
         ax[1, 2].plot(t, S.max_gen[:, q], color=col[q])
-    ax[0, 0].set(title="total biomass (t)", xlabel="day"); ax[0, 0].legend()
+    ax[0, 0].set(title="total biomass (t)", xlabel="day"); species_legend(ax[0, 0], len(sp))
     ax[0, 1].set(title="super-individuals (agents)", xlabel="day")
     ax[0, 2].set(title="egg production (d$^{-1}$)", xlabel="day")
     ax[1, 2].set(title="max generation among agents", xlabel="day")
     for p, name, c in zip(range(5), ["N", "P", "Z", "K", "D"], ["k", "g", "orange", "magenta", "brown"]):
         ax[1, 0].semilogy(t, S.plankton[:, p], color=c, label=name)
-    ax[1, 0].set(title="NPZKD inventories (mmol N)", xlabel="day"); ax[1, 0].legend()
+    if "benthos" in S and float(S.benthos.max()) > 0:                  # benthic fauna pool, g -> mmol N
+        ax[1, 0].semilogy(t, S.benthos * 1.8, color="tab:cyan", label="benthos")
+    ax[1, 0].set(title="NPZKD (+ benthos) inventories (mmol N)", xlabel="day"); ax[1, 0].legend()
     ax[1, 1].plot(t, S.budget_error, "k")
     ax[1, 1].set(title="relative N budget error", xlabel="day")
     ax2 = ax[1, 1].twinx()
@@ -58,29 +96,31 @@ def timeseries(F, S, M, out):
 
 def stages(S, M, out):
     sp, st = M["species"], M["stages"]
-    fig, ax = plt.subplots(1, len(sp), figsize=(4 * len(sp), 3.2), squeeze=False)
+    fig, ax = species_grid(len(sp), 4, 3.2)
     for q, n in enumerate(sp):
         b = S.biomass[:, q].values / 1e6
-        ax[0, q].stackplot(S.time, b.T, labels=st, colors=plt.cm.viridis(np.linspace(0.1, 0.9, 4)))
-        ax[0, q].set(title=f"{n}: biomass by stage (t)", xlabel="day")
-    ax[0, 0].legend(loc="upper left")
+        ax[q].stackplot(S.time, b.T, labels=st, colors=plt.cm.viridis(np.linspace(0.1, 0.9, 4)))
+        ax[q].set(title=f"{n}: biomass by stage (t)", xlabel="day")
+    ax[0].legend(loc="upper left")
     fig.tight_layout(); fig.savefig(out / "stages.png"); plt.close(fig)
 
 
 def traits(S, M, out):
     sp, col, tr = M["species"], M["colors"], M["traits"]
     fig, ax = plt.subplots(4, 4, figsize=(15, 9), sharex=True)
-    print(len(tr))
     for k, name in enumerate(tr):
         a = ax.flat[k]
         for q, n in enumerate(sp):
             m, s = S.trait_mean[:, q, k].values, S.trait_sd[:, q, k].values
             a.plot(S.time, m - m[0], color=col[q], label=n)
-            a.fill_between(S.time, m - m[0] - s, m - m[0] + s, color=col[q], alpha=0.12)
+            if len(sp) <= 6:                                  # more bands than that only blur together
+                a.fill_between(S.time, m - m[0] - s, m - m[0] + s, color=col[q], alpha=0.12)
         a.axhline(0, color="k", lw=0.5)
         a.set_title(f"{name}: change in mean")
-    ax.flat[0].legend(); [a.set_xlabel("day") for a in ax[-1]]
-    fig.suptitle("Evolution of population-mean breeding values (shading: +/- genetic SD)")
+    species_legend(ax.flat[len(tr) - 1] if len(sp) > 10 else ax.flat[0], len(sp)); [a.set_xlabel("day") for a in ax[-1]]
+    for a in ax.flat[len(tr):]:
+        a.axis("off")
+    fig.suptitle("Evolution of population-mean breeding values" + (" (shading: +/- genetic SD)" if len(sp) <= 6 else ""))
     fig.tight_layout(); fig.savefig(out / "traits.png"); plt.close(fig)
 
 
@@ -88,11 +128,11 @@ def behaviour(S, M, out):
     if "behavior" not in S or float(S.behavior.sum()) == 0:
         return
     sp, names = M["species"], M["behaviors"]
-    fig, ax = plt.subplots(1, len(sp), figsize=(4 * len(sp), 3.4), squeeze=False)
+    fig, ax = species_grid(len(sp), 4, 3.4)
     for q, n in enumerate(sp):
-        ax[0, q].stackplot(S.time, S.behavior[:, q].values.T, labels=names, colors=plt.cm.tab10(np.arange(len(names))))
-        ax[0, q].set(title=f"{n}: behaviour budget (agents)", xlabel="day", ylim=(0, 1))
-    ax[0, 0].legend(loc="lower left", fontsize=7)
+        ax[q].stackplot(S.time, S.behavior[:, q].values.T, labels=names, colors=plt.cm.tab10(np.arange(len(names))))
+        ax[q].set(title=f"{n}: behaviour budget (agents)", xlabel="day", ylim=(0, 1))
+    ax[0].legend(loc="lower left", fontsize=7)
     fig.tight_layout(); fig.savefig(out / "behaviour.png"); plt.close(fig)
 
 
@@ -109,10 +149,14 @@ def biogeochem(F, S, M, out):
         o = F.O2.isel(time=-1).mean("lon")
         im = ax[1].pcolormesh(F.lat, F.depth, o, cmap="viridis", shading="auto")
         ax[1].invert_yaxis(); plt.colorbar(im, ax=ax[1]); ax[1].set(title="zonal-mean O$_2$, final day", xlabel="lat", ylabel="depth (m)")
-    for q, n in enumerate(sp):
-        ax[2].plot(S.time, S.metabolic_index[:, q], color=col[q], label=n)
+    air = species_flags(F, "air_breathing")                  # whales and dolphins have lungs: no index to plot
+    gill = [q for q in range(len(sp)) if not (air[q] if q < len(air) else False)]
+    for q in gill:
+        ax[2].plot(S.time, S.metabolic_index[:, q], color=col[q], label=sp[q])
     ax[2].axhline(1, color="k", ls="--", lw=0.8)
-    ax[2].set(title="metabolic index (1 = suffocation)", xlabel="day", yscale="log"); ax[2].legend(fontsize=7)
+    ax[2].set(title="metabolic index (1 = suffocation)" + (", air breathers left out" if len(gill) < len(sp) else ""),
+              xlabel="day", yscale="log")
+    species_legend(ax[2], len(gill))
     A = float(S.attrs.get("ocean_area", 0)) or 1.0
     gc = lambda x: x * 12.011 / 1000 / A * 365
     ax[3].stackplot(S.time, gc(S.export_sinking), gc(S.export_fish), gc(S.export_respired),
@@ -129,14 +173,15 @@ def losses(S, M, out):
     tot = (S.losses * dt[:, None, None]).sum("time").values
     use = [c for c in range(len(causes)) if tot[:, c].sum() > 0]
     frac = tot[:, use] / tot[:, use].sum(1, keepdims=True)
-    fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+    fig, ax = plt.subplots(1, 2, figsize=(13, max(4, 0.22 * len(sp) + 1)))
     left = np.zeros(len(sp))
     for c, f in zip(use, frac.T):
         ax[0].barh(sp, f, left=left, label=causes[c]); left += f
-    ax[0].set(title="share of biomass lost by cause", xlim=(0, 1)); ax[0].legend(fontsize=8)
+    ax[0].set(title="share of biomass lost by cause", xlim=(0, 1)); ax[0].tick_params(axis="y", labelsize=7)
+    ax[0].legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.5, -0.04), ncol=4, frameon=False)
     for q, n in enumerate(sp):
         ax[1].plot(S.time, S.catch[:, q] / 1e6, color=M["colors"][q], label=n)
-    ax[1].set(title="catch (t d$^{-1}$)", xlabel="day"); ax[1].legend()
+    ax[1].set(title="catch (t d$^{-1}$)", xlabel="day"); species_legend(ax[1], len(sp))
     fig.tight_layout(); fig.savefig(out / "losses.png"); plt.close(fig)
 
 
@@ -149,22 +194,26 @@ def arrows(ax, F, f, k=2):
 def maps(F, A, M, out, it=-1):
     sp, col = M["species"], M["colors"]
     ns = len(sp)
-    fig, ax = plt.subplots(2, max(3, ns), figsize=(4.2 * max(3, ns), 7.5))
+    env = 4 if "benthos" in F else 3                          # environment panels first, then one per species
+    fig, ax = species_grid(env + ns, 4.2, 3.6)
     f = F.isel(time=it)
-    plt.colorbar(mapax(ax[0, 0], F, f.temp[0], "SST (°C) + surface currents", "RdYlBu_r"), ax=ax[0, 0], shrink=0.7)
-    arrows(ax[0, 0], F, f)
-    plt.colorbar(mapax(ax[0, 1], F, np.log10(f.P[0]), "log10 surface P (mmol N m$^{-3}$)", "YlGn"), ax=ax[0, 1], shrink=0.7)
-    plt.colorbar(mapax(ax[0, 2], F, np.log10(f.Z[:2].mean("depth")), "log10 Z 0-75 m", "PuBu"), ax=ax[0, 2], shrink=0.7)
-    for a in ax[0, 3:]:
-        a.axis("off")
+    plt.colorbar(mapax(ax[0], F, f.temp[0], "SST (°C) + surface currents", "RdYlBu_r"), ax=ax[0], shrink=0.7)
+    arrows(ax[0], F, f)
+    plt.colorbar(mapax(ax[1], F, np.log10(f.P[0]), "log10 surface P (mmol N m$^{-3}$)", "YlGn"), ax=ax[1], shrink=0.7)
+    plt.colorbar(mapax(ax[2], F, np.log10(f.Z[:2].mean("depth")), "log10 Z 0-75 m", "PuBu"), ax=ax[2], shrink=0.7)
+    if env == 4:
+        plt.colorbar(mapax(ax[3], F, np.log10(np.maximum(f.benthos, 1e-3)), "log10 benthos (g m$^{-2}$)", "inferno"),
+                     ax=ax[3], shrink=0.7)
     snap = A.where(A.time == A.time.max(), drop=True) if A.sizes.get("rec", 0) else None
     for q, n in enumerate(sp):
+        a = ax[env + q]
         b = np.log10(np.maximum(f.fish_biomass[q].sum("stage"), 1e-3))
-        plt.colorbar(mapax(ax[1, q], F, b, f"log10 {n} biomass (g m$^{{-2}}$)", "magma", vmin=-2), ax=ax[1, q], shrink=0.7)
-        ax[1, q].contour(F.lon, F.lat, f.ibm, [0.5], colors="c", linewidths=0.6)
+        lo, hi = log_range(b.values)
+        plt.colorbar(mapax(a, F, b, f"log10 {n} biomass (g m$^{{-2}}$)", "magma", vmin=lo, vmax=hi), ax=a, shrink=0.7)
+        a.contour(F.lon, F.lat, f.ibm, [0.5], colors="c", linewidths=0.6)
         if snap is not None:
             s = snap.species == q
-            ax[1, q].scatter(snap.lon[s], snap.lat[s], s=1, c="w", alpha=0.4)
+            a.scatter(snap.lon[s], snap.lat[s], s=1, c="w", alpha=0.4)
     fig.suptitle(f"day {float(f.time):.1f} (cyan = IBM cells, dots = agents at last snapshot)")
     fig.tight_layout(); fig.savefig(out / "maps.png"); plt.close(fig)
 
@@ -172,24 +221,26 @@ def maps(F, A, M, out, it=-1):
 def trait_maps(F, M, out, trait="T_opt"):
     sp = M["species"]
     k = M["traits"].index(trait)
-    fig, ax = plt.subplots(2, len(sp), figsize=(4.2 * len(sp), 7), squeeze=False)
+    fig, ax = species_grid(2 * len(sp), 4.2, 3.5)              # each species: first and last frame side by side
     for row, it in enumerate((0, -1)):
         f = F.isel(time=it)
         for q, n in enumerate(sp):
             tm = f.trait_mean[q, k].where(f.fish_biomass[q].sum("stage") > 1e-2)
-            plt.colorbar(mapax(ax[row, q], F, tm, f"{n} {trait} day {float(f.time):.0f}", "coolwarm"), ax=ax[row, q], shrink=0.7)
+            a = ax[2 * q + row]
+            plt.colorbar(mapax(a, F, tm, f"{n} {trait} day {float(f.time):.0f}", "coolwarm"), ax=a, shrink=0.7)
     fig.suptitle(f"Local mean breeding value for {trait} (masked where biomass < 0.01 g m$^{{-2}}$)")
     fig.tight_layout(); fig.savefig(out / f"trait_map_{trait}.png"); plt.close(fig)
 
 
 def hovmoller(F, M, out):
     sp = M["species"]
-    fig, ax = plt.subplots(1, len(sp) + 1, figsize=(4 * (len(sp) + 1), 3.6))
+    fig, ax = species_grid(len(sp) + 1, 4, 3.6)
     sst = F.temp[:, 0].mean("lon")
     ax[0].pcolormesh(F.time, F.lat, sst.T, cmap="RdYlBu_r", shading="auto"); ax[0].set(title="zonal-mean SST", xlabel="day")
     for q, n in enumerate(sp):
         b = np.log10(np.maximum(F.fish_biomass[:, q].sum("stage").mean("lon"), 1e-3))
-        ax[q + 1].pcolormesh(F.time, F.lat, b.T, cmap="magma", vmin=-2, shading="auto")
+        lo, hi = log_range(b.values)
+        ax[q + 1].pcolormesh(F.time, F.lat, b.T, cmap="magma", vmin=lo, vmax=hi, shading="auto")
         ax[q + 1].set(title=f"{n}: zonal-mean log10 biomass", xlabel="day")
     ax[0].set_ylabel("latitude")
     fig.tight_layout(); fig.savefig(out / "hovmoller.png"); plt.close(fig)
@@ -204,11 +255,14 @@ def life_history(A, L, M, out):
             s = born & (L.species == q)
             if s.sum():
                 ax[0].hist((L.t_end - L.tb)[s], bins=40, histtype="step", color=col[q], label=n)
-            ax[1].bar(np.arange(len(causes)) + 0.2 * q - 0.3, [(s & (L.cause == c)).sum() for c in range(len(causes))],
-                      0.2, color=col[q])
+            wd = 0.8 / len(sp)                                     # bars share each cause's slot, however many species
+            ax[1].bar(np.arange(len(causes)) - 0.4 + wd * (q + 0.5), [(s & (L.cause == c)).sum() for c in range(len(causes))],
+                      wd, color=col[q])
             g = L.gen[L.species == q]
             ax[2].hist(g, bins=np.arange(g.max() + 2) - 0.5 if len(g) else 1, histtype="step", color=col[q])
-        ax[0].set(title="agent lifetimes, born in model (days)", yscale="log"); ax[0].legend()
+        ax[0].set(title="agent lifetimes, born in model (days)", yscale="log")
+        if len(sp) <= 10:
+            ax[0].legend(fontsize=7)
         ax[1].set_xticks(range(len(causes)), causes, rotation=40, ha="right")
         ax[1].set(title="fate of agents born in model", yscale="log")
         ax[2].set(title="generation of all agents", yscale="log")
@@ -219,6 +273,8 @@ def life_history(A, L, M, out):
             s = a.species == q
             ax[3].scatter(a.age[s] / 365, a.L[s], s=2, color=col[q], alpha=0.3, label=n)
         ax[3].set(title="length at age (agent snapshots)", xlabel="age (yr)", ylabel="L (cm)", yscale="log")
+        if len(sp) > 10:
+            species_legend(ax[3], len(sp), markerscale=4)
     fig.tight_layout(); fig.savefig(out / "life_history.png"); plt.close(fig)
 
 
@@ -236,14 +292,14 @@ def tracks(F, A, M, out, n=40):
         ax.plot(s.lon[-1], s.lat[-1], "o", color=M["colors"][q], ms=3)
     for q, nm in enumerate(M["species"]):
         ax.plot([], [], color=M["colors"][q], label=nm)
-    ax.legend(fontsize=8)
+    species_legend(ax, len(M["species"]))
     fig.tight_layout(); fig.savefig(out / "tracks.png"); plt.close(fig)
 
 
 def depth_use(A, M, out):
     if not A.sizes.get("rec", 0):
         return
-    fig, ax = plt.subplots(1, len(M["species"]), figsize=(3.4 * len(M["species"]), 3.2), sharey=True)
+    fig, ax = species_grid(len(M["species"]), 3.4, 3.2, ncol=8, sharey=True)
     for q, n in enumerate(M["species"]):
         s = (A.species == q).values
         for st, name in enumerate(M["stages"]):
@@ -251,7 +307,8 @@ def depth_use(A, M, out):
             if w.any():
                 d, c = np.unique(A.depth.values[w], return_counts=True)
                 ax[q].plot(c / c.sum(), d, "o-", label=name)
-        ax[q].set(title=n, xlabel="fraction of agents"); ax[q].invert_yaxis() if q == 0 else None
+        ax[q].set(title=n, xlabel="fraction of agents")
+    ax[0].invert_yaxis()
     ax[0].set_ylabel("depth (m)"); ax[0].legend(fontsize=7)
     fig.tight_layout(); fig.savefig(out / "depth_use.png"); plt.close(fig)
 
@@ -267,8 +324,7 @@ def save_anim(fig, update, frames, path):
 
 def anim_fields(F, M, out):
     sp = M["species"]
-    fig, ax = plt.subplots(2, max(2, (len(sp) + 3) // 2 + 1), figsize=(15, 7.5))
-    ax = ax.flat
+    fig, ax = species_grid(len(sp) + 2, 3.4, 2.8, ncol=max(3, min(8, (len(sp) + 3) // 2 + 1)))
     ims = [mapax(ax[0], F, F.temp[0, 0], "SST", "RdYlBu_r", vmin=float(F.temp[:, 0].min()), vmax=float(F.temp[:, 0].max())),
            mapax(ax[1], F, np.log10(F.P[0, 0]), "log10 surface P", "YlGn", vmin=-2, vmax=0.7)]
     for q, n in enumerate(sp):
@@ -333,9 +389,9 @@ def ensemble_plots(run, out):
     params = [E[v] for v in E.data_vars if v.startswith("param_") and E[v].attrs["path"] != "run.seed"]
     print(f"ensemble: {E.sizes['member']} members, {E.sizes['time']} steps, parameters: "
           + ", ".join(p.attrs["path"] for p in params))
-    fig, ax = plt.subplots(1, len(sp), figsize=(4.2 * len(sp), 3.6), squeeze=False)
+    fig, ax = species_grid(len(sp), 4.2, 3.6)
     for q, n in enumerate(sp):
-        a, b = ax[0, q], B[:, :, q]
+        a, b = ax[q], B[:, :, q]
         a.plot(E.time, b.T, color=col[q], alpha=0.35, lw=0.8)
         a.fill_between(E.time, b.quantile(0.1, "member"), b.quantile(0.9, "member"), color=col[q], alpha=0.2)
         a.plot(E.time, b.median("member"), color="k", lw=1.8)

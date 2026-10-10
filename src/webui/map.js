@@ -214,15 +214,18 @@ const MapView = (() => {
     const base = Math.max(0.7, Math.min(cell * 0.10, 2.0)), rmax = Math.max(1.4, cell * 0.30);
     ctx.lineWidth = 0.8;
     for (let i = 0; i < ag.n; i++) {
-      const col = colors[ag.species[i]];
-      if (!col) continue;                                           // species filtered out
+      const st = colors[ag.species[i]];
+      if (!st) continue;                                            // species filtered out
       const [px, py] = toPx(ag.lon[i], ag.lat[i]);
       const r = Math.min(base * (0.55 + 0.11 * Math.log10(Math.max(ag.num[i], 1))), rmax);
       ctx.beginPath();
-      ctx.arc(px, py, r, 0, 6.2832);
-      ctx.fillStyle = col;
+      ctx.arc(px, py, st.ring ? Math.max(r, 1.6) : r, 0, 6.2832);
       ctx.globalAlpha = ag.stage[i] >= 2 ? 0.8 : 0.35;              // juveniles/adults solid, eggs/larvae faint
-      ctx.fill();
+      if (st.ring) {                                                // 9th+ series: a ring of the same hue
+        ctx.strokeStyle = st.color; ctx.lineWidth = 1.2; ctx.stroke();
+      } else {
+        ctx.fillStyle = st.color; ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
   }

@@ -30,6 +30,7 @@ CONFIG_DIR = RUNS_DEFAULT / "_configs"
 LEVEL_VARS = ("temp", "N", "P", "Z", "krill", "D", "O2", "par", "u", "v", "w")       # (time, depth, lat, lon)
 SPECIES_STAGE_VARS = ("fish_biomass", "fish_numbers")                   # (time, species, stage, lat, lon)
 SPECIES_VARS = ("agent_biomass",)                                       # (time, species, lat, lon)
+SURFACE_VARS = ("benthos",)                                             # (time, lat, lon)
 
 
 # ------------------------------------------------------------------ namelist handling
@@ -95,6 +96,32 @@ def absolutise(text, base):
     text = set_key(text, "[run]", "out_dir", str(RUNS_DEFAULT))
     text = set_key(text, "[ocean]", "sw_cache_dir", str(ROOT / "sw_cache"))
     return text
+
+
+def missing_inputs(cfg):
+    """Input files a namelist names that do not exist (paths already absolutised): the warm start, the forcing
+    and bathymetry, the literature biomass and oxygen tables, the fishing table, and every species file."""
+    run, ocean, npzd, fishing = (cfg.get(k, {}) for k in ("run", "ocean", "npzd", "fishing"))
+    want = []
+    if run.get("warm_start"):
+        want.append(("run.warm_start", run["warm_start"]))
+    if ocean.get("source") == "netcdf":
+        want += [("ocean.file", ocean.get("file", "")), ("ocean.bathymetry", ocean.get("bathymetry"))]
+    if str(run.get("initial_biomass", "namelist")).lower() == "literature":
+        want.append(("run.literature_biomass", run.get("literature_biomass", str(ROOT / "observations/literature_biomass.toml"))))
+    if str(npzd.get("O2_init", "profile")).lower() == "woa":
+        want.append(("npzd.O2_file", npzd.get("O2_file", str(ROOT / "observations/woa/woa23_all_o00_01.nc"))))
+    if fishing.get("mode") == "ram":
+        want.append(("fishing.file", fishing.get("file", str(ROOT / "observations/ram_fishing_series.json"))))
+    want += [("species", s.get("file", "")) for s in cfg.get("species", [])]
+    out = []
+    for what, p in want:
+        if not p or any(ch in str(p) for ch in "*?["):           # unset, or a glob the model expands itself
+            continue
+        q = Path(p) if Path(p).is_absolute() else ROOT / p          # the model runs from the project root
+        if not q.exists():
+            out.append(f"{what}: {p}")
+    return out
 
 
 def apply_overrides(text, ov):
@@ -329,6 +356,21 @@ def all_species_groups():
     return groups
 
 
+def species_flags(ds, names):
+    """Per-species switches from the resolved config: FEISTY type, whether it is always individuals (agents),
+    and whether it breathes air (no metabolic index), for runs that predate them: "none", False, False."""
+    spec = {}
+    if "config" in ds.ncattrs():
+        try:
+            spec = {str(s.get("name")): s for s in ast.literal_eval(ds.getncattr("config")).get("species", [])}
+        except Exception:
+            pass
+    get = lambda n, k, d: spec.get(n, {}).get(k, d)
+    return dict(feisty=[str(get(n, "feisty", "none")) for n in names],
+                individual=[bool(get(n, "individual", False)) for n in names],
+                air_breathing=[bool(get(n, "air_breathing", False)) for n in names])
+
+
 def species_groups(ds, names):
     """Functional group per species, read from the `group` key in each species file. fishNET stores the
     whole resolved config in the output's `config` attribute, so no extra model output is needed.
@@ -354,6 +396,7 @@ def meta_attrs(ds):
     keys = ("species", "colors", "traits", "stages", "causes", "behaviors")
     out = {k: [s for s in ds.getncattr(k).split(",") if s] for k in keys if k in ds.ncattrs()}
     out["groups"] = species_groups(ds, out.get("species", []))
+    out.update(species_flags(ds, out.get("species", [])))
     out["start"] = ds.getncattr("start") if "start" in ds.ncattrs() else "2000-01-01 00:00:00"
     for k in ("dt_hours", "hybrid", "engine", "behavior_mode", "ocean_area"):
         if k in ds.ncattrs():
@@ -420,6 +463,10 @@ def field_slice(ds, var, t, species=-1, stage=-1, depth=0, trait=0):
         a = np.asarray(ds["bottom_depth"][:], dtype="f4")
     elif var in LEVEL_VARS:
         a = np.asarray(ds[var][t, depth], dtype="f4")
+        if var == "w":
+            a = a * 86400                                       # m/s -> m/d, the unit upwelling is quoted in
+    elif var in SURFACE_VARS:
+        a = np.asarray(ds[var][t], dtype="f4")
     elif var in SPECIES_STAGE_VARS:
         a = np.asarray(ds[var][t], dtype="f4")                  # (species, stage, lat, lon)
         a = pick_species(a, species)
@@ -584,6 +631,9 @@ class Handler(BaseHTTPRequestHandler):
                 line = int(m[1]) if (m := re.search(r"at line (\d+)", str(e))) else 0
                 near = text.splitlines()[line - 1].strip() if 0 < line <= len(text.splitlines()) else ""
                 return self.send_error_json(400, f"{name}.toml is not valid TOML: {e}" + (f"\n  {near}" if near else ""))
+            missing = missing_inputs(tomllib.loads(text))
+            if missing:                                       # say so now, not as a traceback in the model log
+                return self.send_error_json(400, f"{name}: files the namelist needs are missing:\n  " + "\n  ".join(missing))
             if body.get("fresh", True):
                 shutil.rmtree(run_dir(name), ignore_errors=True)
             STORE.close_run(name)
@@ -610,7 +660,18 @@ class Handler(BaseHTTPRequestHandler):
             cmd = [sys.executable, "-u", str(SRC / "plot.py"), str(run_dir(run))]
             if body.get("no_anim", True):
                 cmd.append("--no-anim")
-            subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            feisty = bool(body.get("feisty", False))
+
+            def make():                                      # plot.py, then the FEISTY comparison if asked for
+                subprocess.run(cmd, cwd=str(ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                if feisty:
+                    out = run_dir(run) / "feisty"
+                    subprocess.run([sys.executable, str(SRC / "feisty_compare.py"), str(run_dir(run)), "--out", str(out)],
+                                   cwd=str(ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if (out / "feisty.png").exists():
+                        (run_dir(run) / "figures").mkdir(exist_ok=True)
+                        shutil.copy(out / "feisty.png", run_dir(run) / "figures" / "feisty.png")
+            threading.Thread(target=make, daemon=True).start()
             return self.send_json({"started": True})
         if route == "preview":
             src = (ROOT / (body.get("namelist") or "namelist.toml")).read_text()
