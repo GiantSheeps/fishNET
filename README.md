@@ -403,12 +403,3 @@ transport a migrating fish performs). These go to `series.nc` and the `biogeoche
 - Hybrid: IBM cells from static regions and/or SST-chlorophyll fronts; agents leaving IBM cells
   aggregate; biomass entering IBM cells is disaggregated at regulator updates, with trait mean and
   variance reproduced exactly and skew/kurtosis via Cornish-Fisher.
-
-## Notes
-- Species parameters are calibrated with the probabilistic engine for the synthetic North-Atlantic-like
-  basin: all four species persist in bounded seasonal cycles over two years (0.3-3.7x initial biomass).
-  The softmax engine runs with the same parameters but was calibrated earlier; re-tune for other forcing.
-- Species parameters were calibrated on the synthetic ocean; the shallow-water ocean is more productive
-  (thermocline upwelling), so expect different equilibria and re-tune if needed.
-- `agents.nc` grows quickly (~200 bytes per agent per snapshot); set `agent_output_every_hours`.
-- netCDF forcing needs `temp`, `u`, `v` on (time, depth, lat, lon); rename via `ocean.names`.
